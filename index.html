@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ລະບົບຕິດຕາມການຜະລິດ — ໂຮງງານເສື້ອກີລາພິມລາຍ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #121212;
+  --bg2:      #1E1E1E;
+  --bg3:      #252525;
+  --bg4:      #2D2D2D;
+  --border:   #333333;
+  --border2:  #444444;
+  --red:      #E53935;
+  --red-dark: #C62828;
+  --red-glow: rgba(229, 57, 53, 0.15);
+  --red-dim:  #3D1414;
+  --red-lite: #FF8A80;
+  --accent:   #42A5F5;
+  --text:     #E0E0E0;
+  --text2:    #B0B0B0;
+  --text3:    #757575;
+  --mono:     'IBM Plex Mono', monospace;
+  --r:        8px;
+  --rl:       12px;
+  --shadow:   0 4px 12px rgba(0,0,0,0.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Noto Sans Lao',sans-serif;
+  background:var(--bg);color:var(--text);
+  font-size:14px;line-height:1.6;min-height:100vh;
+}
+
+/* HEADER */
+.hdr{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:0 2rem;height:64px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50;
+  box-shadow: var(--shadow);
+}
+.hdr-l{display:flex;align-items:center;gap:16px}
+.logo{
+  width:40px;height:40px;border-radius:var(--r);
+  background: linear-gradient(135deg, var(--red), var(--red-dark));
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:800;color:#fff;flex-shrink:0;
+  box-shadow: 0 2px 8px rgba(229, 57, 53, 0.4);
+}
+.hdr-title{font-size:16px;font-weight:700; letter-spacing: 0.5px;}
+.hdr-sub{font-size:11px;color:var(--text3);margin-top:2px; font-weight: 500;}
+.hdr-date{
+  font-family:var(--mono);font-size:12px;color:var(--text2);
+  background:var(--bg3);border:1px solid var(--border);
+  padding:6px 14px;border-radius:var(--r);
+}
+
+/* MAIN */
+.main{padding:2rem;max-width:1440px;margin:0 auto}
+
+/* STATS */
+.sg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;margin-bottom:2rem}
+.sc{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--rl);padding:18px 20px;position:relative;overflow:hidden;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.sc:hover { transform: translateY(-2px); border-color: var(--border2); }
+.sc.danger{border-color: var(--red-dark); background: linear-gradient(to bottom right, var(--red-dim), var(--bg2));}
+.sl{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.sv{font-size:28px;font-weight:800;letter-spacing:-0.02em;line-height:1}
+.su{font-size:14px;font-weight:500;color:var(--text3);margin-left:4px}
+.sh{font-size:11px;color:var(--text3);margin-top:6px; font-family: var(--mono);}
+
+/* STAGE BAR */
+.sb-container {
+    margin-bottom: 1.5rem;
+    background:var(--bg2);border:1px solid var(--border);
+    border-radius:var(--rl);
+    padding: 12px;
+}
+.sb-title {
+    font-size: 11px; font-weight: 700; color: var(--text3); 
+    margin-bottom: 10px; padding-left: 8px; text-transform: uppercase; letter-spacing: 1px;
+}
+.sb{
+  display:flex;align-items:center;overflow-x:auto; gap: 4px;
+  padding-bottom: 4px;
+}
+.sb::-webkit-scrollbar { height: 4px; }
+.sb::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+
+.sp{
+  display:flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--text2);white-space:nowrap;cursor:pointer;
+  padding:8px 12px;border-radius:var(--r);transition:all .2s;
+  background: var(--bg3); border: 1px solid transparent;
+}
+.sp:hover{background:var(--bg4); border-color: var(--border2);}
+.sp.on{background: var(--red-dim); color:var(--red-lite); border-color: var(--red-dark); font-weight:700}
+.sdot{width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.sp.on .sdot{background:var(--red); box-shadow: 0 0 8px var(--red);}
+.sct{
+  font-family:var(--mono);font-size:10px;
+  background:rgba(255,255,255,0.05);color:var(--text3);
+  padding:2px 6px;border-radius:4px; margin-left: 4px;
+}
+.sp.on .sct{background:rgba(255,255,255,0.1);color:var(--red-lite)}
+.s-all{
+  margin-left:auto;font-size:12px;font-weight: 600; color:var(--text2);
+  cursor:pointer;padding:8px 16px;border-radius:var(--r);
+  background: var(--bg3); border: 1px solid var(--border);
+}
+.s-all:hover{background:var(--bg4); border-color: var(--accent); color: var(--accent);}
+
+/* TOOLBAR */
+.tb{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.tbl{display:flex;align-items:center;gap:12px;flex:1;flex-wrap:wrap}
+select,input[type=text],input[type=search],input[type=number],input[type=date]{
+  height:40px;padding:0 14px;
+  border:1px solid var(--border);border-radius:var(--r);
+  background:var(--bg3);color:var(--text);
+  font-family:'Noto Sans Lao',sans-serif;font-size:14px;outline:none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+select:focus,input:focus{border-color:var(--accent); box-shadow: 0 0 0 2px rgba(66, 165, 245, 0.2);}
+.si{width:240px}
+.btn{
+  height:40px;padding:0 18px;border-radius:var(--r);
+  border:1px solid var(--border);background:var(--bg3);color:var(--text2);
+  font-family:'Noto Sans Lao',sans-serif;font-size:14px;
+  cursor:pointer;font-weight:600;white-space:nowrap;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;
+}
+.btn:hover{background:var(--bg4);color:var(--text); border-color: var(--border2);}
+.bp{background:var(--red);color:#fff;border-color:var(--red); box-shadow: 0 2px 6px rgba(229, 57, 53, 0.3);}
+.bp:hover{background:var(--red-dark);border-color:var(--red-dark); transform: translateY(-1px);}
+.bx{background:rgba(77, 191, 138, 0.1);color:#4DBF8A;border-color:rgba(77, 191, 138, 0.3)}
+.bx:hover{background:rgba(77, 191, 138, 0.2); border-color:#4DBF8A}
+.bi{background:rgba(66, 165, 245, 0.1);color:#42A5F5;border-color:rgba(66, 165, 245, 0.3)}
+.bi:hover{background:rgba(66, 165, 245, 0.2); border-color:#42A5F5}
+
+/* TABLE */
+.tw{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden; box-shadow: var(--shadow);}
+.ts{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{
+  font-size:11px;font-weight:700;color:var(--text3);
+  letter-spacing:.1em;text-transform:uppercase;
+  padding:14px 16px;text-align:left;
+  background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,0.02)}
+tbody td{padding:14px 16px;vertical-align:middle}
+.in{font-weight:700;font-size:14px;line-height:1.4; color: var(--text);}
+.ino{font-size:12px;color:var(--text3);margin-top:4px; font-weight: 500;}
+.ifabric{display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--accent); background: rgba(66, 165, 245, 0.1); padding: 2px 6px; border-radius: 4px; margin-top: 4px;}
+.ic{font-family:var(--mono);font-size:12px;color:var(--text2); font-weight: 500;}
+.qt{font-weight:700;font-size:15px;text-align:right;font-family:var(--mono); color: var(--text);}
+
+/* badge */
+.badge{display:inline-block;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap; border: 1px solid transparent;}
+.b-step { background: var(--bg3); color: var(--text2); border-color: var(--border); }
+.b-done { background: rgba(77, 191, 138, 0.1); color: #4DBF8A; border-color: rgba(77, 191, 138, 0.3); }
+.b-active { background: var(--red-dim); color: var(--red-lite); border-color: var(--red-dark); }
+
+/* progress */
+.pw{display:flex;align-items:center;gap:10px}
+.pb{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;min-width:80px}
+.pf{height:100%;border-radius:3px; transition: width 0.4s ease;}
+.pp{font-size:11px;color:var(--text2);min-width:36px;text-align:right;font-family:var(--mono); font-weight: 600;}
+
+/* defect */
+.dok{color:#4DBF8A;font-weight:700}
+.dwn{color:#FFB74D;font-weight:700}
+.dbd{color:var(--red-lite);font-weight:700}
+.ds{font-size:11px;color:var(--text3); font-family: var(--mono);}
+
+/* days */
+.dc{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
+.dd{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--mono)}
+.dok2{background:rgba(77, 191, 138, 0.15);color:#4DBF8A}
+.dwn2{background:rgba(255, 183, 77, 0.15);color:#FFB74D}
+.dbd2{background:rgba(229, 57, 53, 0.15);color:var(--red-lite)}
+
+/* actions */
+.act-cell { display: flex; gap: 6px; }
+.ab{border:1px solid var(--border);background:var(--bg3);cursor:pointer;color:var(--text2);font-size:14px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:var(--r);transition:all .2s}
+.ab:hover{background:var(--bg4);color:var(--text); border-color: var(--border2); transform: scale(1.1);}
+.ab-next { color: var(--accent); border-color: rgba(66, 165, 245, 0.3); }
+.ab-next:hover { background: rgba(66, 165, 245, 0.1); border-color: var(--accent); }
+.ab-del:hover { color: var(--red); border-color: var(--red); background: var(--red-dim); }
+
+.ec{text-align:center;padding:4rem;color:var(--text3);font-size:14px; font-weight: 500;}
+
+/* MODAL */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter: blur(4px);display:flex;align-items:center;justify-content:center;z-index:200}
+.md{
+  background:var(--bg2);border-radius:var(--rl);border:1px solid var(--border);
+  padding:0;width:min(1200px,98vw);max-height:96vh;overflow:hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  display:flex;flex-direction:column;
+}
+.md-body{
+  display:grid;grid-template-columns:1fr 420px;
+  overflow:hidden;flex:1;min-height:0;
+}
+.md-form-panel{
+  padding:1.5rem;overflow-y:auto;border-right:1px solid var(--border);
+}
+.md-preview-panel{
+  background:#f0f0f0;overflow-y:auto;display:flex;flex-direction:column;
+  align-items:center;padding:16px;gap:12px;
+}
+.md-header{
+  padding:1rem 1.5rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+  background:var(--bg2);
+}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.mt{font-size:18px;font-weight:800; color: var(--text);}
+.xb{border:none;background:none;cursor:pointer;color:var(--text3);font-size:24px;line-height:1;padding:4px;border-radius:5px; transition: color 0.2s;}
+.xb:hover{color:var(--red)}
+.fg{margin-bottom:16px}
+.fl{display:block;font-size:12px;font-weight:700;color:var(--text3);letter-spacing:.05em;margin-bottom:8px;text-transform:uppercase}
+.fi{
+  width:100%;height:42px;padding:0 14px;
+  border:1px solid var(--border);border-radius:var(--r);
+  background:var(--bg3);color:var(--text);
+  font-family:'Noto Sans Lao',sans-serif;font-size:14px;outline:none;transition:all .2s;
+}
+.fi:focus{border-color:var(--accent); background: var(--bg4);}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.form-section-label{
+  font-size:11px;font-weight:700;color:var(--accent);
+  letter-spacing:.08em;text-transform:uppercase;
+  margin-bottom:12px;padding:6px 10px;
+  background:rgba(66,165,245,0.07);border-radius:6px;
+  border-left:3px solid var(--accent);
+}
+.mf{display:flex;justify-content:flex-end;gap:12px;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border)}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:2rem;right:2rem;
+  background:var(--bg3);color:var(--text);
+  border:1px solid var(--accent);
+  padding:12px 24px;border-radius:var(--r);
+  font-size:14px;font-weight: 600; z-index:999;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  opacity:0;transform:translateY(10px);transition:all .3s cubic-bezier(0.18, 0.89, 0.32, 1.28);pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+
+.ot{font-size:11px;color:var(--red-lite);font-weight:700;margin-top:6px;letter-spacing:.03em; display: flex; align-items: center; gap: 4px;}
+.fn-info{margin-top:16px;font-size:12px;color:var(--text3);text-align:right;font-family:var(--mono); font-weight: 500;}
+
+/* DEFECT DETAIL MODAL */
+.defect-modal-content {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.defect-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+}
+.defect-item:hover {
+  background: var(--bg4);
+  border-color: var(--border2);
+}
+.defect-stage-name {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 13px;
+  flex: 1;
+}
+.defect-stage-count {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.defect-badge {
+  background: var(--red-dim);
+  color: var(--red-lite);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: var(--mono);
+  border: 1px solid var(--red-dark);
+}
+.defect-percent {
+  color: var(--text2);
+  font-size: 12px;
+  font-family: var(--mono);
+  min-width: 50px;
+  text-align: right;
+}
+
+.gs-search-box {
+  background: var(--bg3); border: 1px solid rgba(66,165,245,0.35);
+  border-radius: var(--r); padding: 14px; margin-bottom: 16px;
+}
+.gs-search-hdr {
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px;
+}
+.gs-search-row {
+  display: flex; gap: 8px; align-items: center; margin-bottom: 10px;
+}
+.col-hint { color: var(--text3); font-weight: 400; font-size: 10px; }
+.gs-filled-ok {
+  font-size: 12px; color: #4DBF8A; padding: 8px 12px;
+  background: rgba(77,191,138,0.1); border-radius: 6px;
+  border: 1px solid rgba(77,191,138,0.3); margin-top: 8px;
+}
+
+/* GOOGLE SHEET IMPORT */
+.gs-btn {
+  width: 100%; height: 42px; border-radius: var(--r);
+  border: 1px dashed rgba(66,165,245,0.5);
+  background: rgba(66,165,245,0.06);
+  color: var(--accent); font-size: 13px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  gap: 8px; transition: all .2s; margin-bottom: 16px;
+  font-family: 'Noto Sans Lao', sans-serif;
+}
+.gs-btn:hover { background: rgba(66,165,245,0.14); border-color: var(--accent); }
+.gs-btn:disabled { opacity: 0.5; cursor: wait; }
+.gs-picker {
+  background: var(--bg3); border: 1px solid var(--accent);
+  border-radius: var(--r); margin-bottom: 16px; overflow: hidden;
+  box-shadow: 0 4px 12px rgba(66,165,245,0.15);
+}
+.gs-picker-hdr {
+  padding: 10px 14px; background: rgba(66,165,245,0.1);
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  letter-spacing: .08em; text-transform: uppercase;
+  border-bottom: 1px solid rgba(66,165,245,0.2);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.gs-row {
+  padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border);
+  display: grid; grid-template-columns: 1fr auto auto;
+  gap: 12px; align-items: center; transition: background .15s;
+  font-size: 13px;
+}
+.gs-row:last-child { border-bottom: none; }
+.gs-row:hover { background: rgba(66,165,245,0.08); }
+.gs-row-code { font-family: var(--mono); font-size: 11px; color: var(--accent); font-weight: 700; }
+.gs-row-qty { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.gs-err { padding: 12px 14px; color: var(--red-lite); font-size: 12px; text-align: center; }
+.gs-loading { padding: 16px; text-align: center; color: var(--text3); font-size: 13px; }
+.gs-tag { font-size: 10px; background: rgba(66,165,245,0.15); color: var(--accent); padding: 2px 6px; border-radius: 4px; }
+
+.hidden{display:none!important}
+@media(max-width:900px){
+  .sg{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:700px){
+  .main{padding: 1rem;}
+  .hdr{padding: 0 1rem;}
+  .sg{grid-template-columns:repeat(2,1fr)}
+  .si{width:100%}
+  .tbl{width: 100%;}
+  .fr{grid-template-columns: 1fr;}
+  .fr3{grid-template-columns: 1fr;}
+}
+/* A4 PREVIEW */
+.a4-sheet {
+  width: 210mm; min-height: 297mm;
+  background: #fff; color: #111;
+  padding: 14mm 14mm 10mm 14mm;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  font-family: 'Noto Sans Lao', 'IBM Plex Mono', sans-serif;
+  font-size: 12px; line-height: 1.5;
+  position: relative; border-radius: 2px;
+  transform-origin: top center;
+  transform: scale(0.62);
+  margin-top: -60mm;
+  flex-shrink: 0;
+}
+/* --- header --- */
+.a4-hdr { display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2.5px solid #111; padding-bottom: 8px; margin-bottom: 10px; }
+.a4-logo-box { display:flex; align-items:center; gap:10px; }
+.a4-logo { width:48px;height:48px;border-radius:6px;background:#E53935;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff; }
+.a4-company { font-size:13px;font-weight:800;color:#111; }
+.a4-company-sub { font-size:10px;color:#555;margin-top:2px; }
+.a4-doc-title { text-align:right; }
+.a4-doc-title h2 { font-size:20px;font-weight:900;color:#E53935;margin:0;letter-spacing:1px; }
+.a4-doc-title .a4-inv { font-size:14px;font-weight:700;color:#111;margin-top:2px; font-family:'IBM Plex Mono',monospace; }
+/* --- meta grid --- */
+.a4-meta { display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin-bottom:10px;padding:8px 10px;background:#f8f8f8;border:1px solid #ddd;border-radius:4px; }
+.a4-meta-row { display:flex;gap:6px;font-size:11px; }
+.a4-meta-label { color:#555;font-weight:700;min-width:90px;flex-shrink:0; }
+.a4-meta-val { color:#111;font-weight:500; }
+/* --- image area --- */
+.a4-img-section { margin-bottom:10px; }
+.a4-img-label { font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px; }
+.a4-img-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+.a4-img-box {
+  border: 1.5px dashed #bbb; border-radius:4px;
+  height: 140px; display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:#fafafa; color:#aaa;font-size:11px;text-align:center;overflow:hidden;position:relative;
+}
+.a4-img-box img { width:100%;height:100%;object-fit:contain; }
+.a4-img-box .a4-img-placeholder { display:flex;flex-direction:column;align-items:center;gap:4px; }
+/* --- stage table --- */
+.a4-table { width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px; }
+.a4-table th { background:#111;color:#fff;padding:5px 8px;text-align:left;font-weight:700;font-size:10px;letter-spacing:.05em; }
+.a4-table td { padding:5px 8px;border-bottom:1px solid #eee; }
+.a4-table tr:nth-child(even) td { background:#f9f9f9; }
+.a4-stage-dot { display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;flex-shrink:0; }
+/* --- sign area --- */
+.a4-sign { display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:12px;border-top:1.5px solid #ddd;padding-top:10px; }
+.a4-sign-box { text-align:center; }
+.a4-sign-line { border-bottom:1px solid #333;height:36px;margin-bottom:4px; }
+.a4-sign-label { font-size:10px;color:#555;font-weight:700; }
+/* --- footer --- */
+.a4-footer { margin-top:auto;padding-top:8px;border-top:1px solid #eee;font-size:9px;color:#aaa;text-align:center; }
+/* --- qr placeholder --- */
+.a4-qr { width:50px;height:50px;background:#f0f0f0;border:1px solid #ddd;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;text-align:center; }
+
+/* UPLOAD ZONE */
+.upload-zone {
+  border: 1.5px dashed var(--border2); border-radius: var(--r);
+  padding: 12px; text-align:center; cursor:pointer;
+  background: var(--bg3); color: var(--text3); font-size:12px;
+  transition: all .2s; margin-bottom:8px;
+}
+.upload-zone:hover { border-color: var(--accent); color: var(--accent); background: rgba(66,165,245,0.05); }
+.upload-zone input { display:none; }
+.img-thumbs { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px; }
+.img-thumb { position:relative;width:72px;height:72px; }
+.img-thumb img { width:100%;height:100%;object-fit:cover;border-radius:5px;border:1px solid var(--border); }
+.img-thumb .rm-btn { position:absolute;top:-5px;right:-5px;width:18px;height:18px;background:#E53935;border:none;border-radius:50%;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1; }
+
+/* A4 PLAYER TABLE */
+.a4-player-table {
+  width:100%; border-collapse:collapse; font-size:11px;
+}
+.a4-player-table th {
+  background:#222; color:#fff; padding:5px 7px;
+  text-align:left; font-size:10px; font-weight:700; letter-spacing:.04em;
+}
+.a4-player-table td {
+  padding:5px 7px; border-bottom:1px solid #e8e8e8; vertical-align:middle;
+}
+.a4-player-table tbody tr:nth-child(even) td { background:#f7f7f7; }
+.a4-player-table tbody tr:last-child td { border-bottom: 2px solid #111; }
+
+/* DETAIL IMAGE ZONE (screenshot upload) */
+.detail-img-zone {
+  border: 2px dashed var(--border2); border-radius: var(--r);
+  min-height: 120px; padding: 12px; margin-bottom: 12px;
+  cursor: pointer; transition: all .2s; position: relative;
+  background: var(--bg3);
+}
+.detail-img-zone:hover, .detail-img-zone.drag-over {
+  border-color: var(--accent); background: rgba(66,165,245,0.05);
+}
+.detail-img-zone.drag-over { border-style: solid; }
+.detail-img-hint { text-align:center; padding: 12px; color: var(--text2); }
+.detail-img-preview {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;
+}
+.detail-img-thumb {
+  position: relative; border-radius: 6px; overflow: hidden;
+  border: 1px solid var(--border);
+  flex: 1 1 auto; min-width: 120px; max-width: 100%;
+}
+.detail-img-thumb img {
+  width: 100%; display: block; cursor: pointer;
+  transition: opacity .2s;
+}
+.detail-img-thumb img:hover { opacity: 0.85; }
+.detail-img-thumb .rm-detail {
+  position: absolute; top: 4px; right: 4px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0,0,0,0.7); border: none;
+  color: #fff; font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.detail-img-thumb .rm-detail:hover { background: var(--red); }
+
+/* A4 detail image section */
+.a4-detail-imgs { display: flex; flex-direction: column; gap: 8px; margin-bottom:10px; }
+.a4-detail-img-wrap { border: 1px solid #ddd; border-radius: 3px; overflow: hidden; }
+.a4-detail-img-wrap img { width: 100%; display: block; }
+.a4-detail-placeholder {
+  border: 1.5px dashed #ccc; border-radius: 4px; height: 80px;
+  display: flex; align-items: center; justify-content: center;
+  color: #bbb; font-size: 11px; text-align: center;
+}
+
+/* PLAYER INPUT GRID in form */
+.player-grid-wrap {
+  border: 1px solid var(--border); border-radius: var(--r);
+  overflow: hidden; margin-bottom: 8px;
+}
+.player-grid-hdr {
+  display: grid;
+  grid-template-columns: 28px 1fr 70px 80px 55px 1fr 32px;
+  gap: 0;
+  background: var(--bg4); border-bottom: 1px solid var(--border);
+  font-size: 10px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.player-grid-hdr span { padding: 6px 8px; }
+.player-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 70px 80px 55px 1fr 32px;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+.player-row:last-child { border-bottom: none; }
+.player-row input, .player-row select {
+  height: 34px; border: none; border-right: 1px solid var(--border);
+  background: var(--bg3); color: var(--text);
+  font-family: 'Noto Sans Lao', sans-serif; font-size: 12px;
+  padding: 0 6px; width: 100%; outline: none; border-radius: 0;
+}
+.player-row input:focus, .player-row select:focus {
+  background: var(--bg4); border-color: var(--border);
+  box-shadow: inset 0 0 0 2px rgba(66,165,245,0.3);
+}
+.player-row .p-num { text-align: center; color: var(--text3); font-size: 11px; font-family: var(--mono); padding: 0 4px; }
+.player-row .rm-player {
+  width:32px; height:34px; border:none; background:transparent;
+  color:var(--text3); cursor:pointer; font-size:14px;
+  display:flex; align-items:center; justify-content:center;
+  transition: color .15s;
+}
+.player-row .rm-player:hover { color: var(--red); }
+.player-add-btn {
+  width:100%; height:34px; border:none; border-top:1px solid var(--border);
+  background:rgba(66,165,245,0.05); color:var(--accent);
+  font-size:12px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  transition: background .15s;
+}
+.player-add-btn:hover { background:rgba(66,165,245,0.12); }
+
+/* PRINT */
+@media print {
+  body > *:not(#print-frame) { display:none !important; }
+  #print-frame { display:block !important; position:fixed;inset:0;z-index:9999;background:#fff; }
+  #print-frame .a4-sheet { box-shadow:none;transform:none;margin:0;width:100%;min-height:100vh;padding:14mm; }
+}
+</style>
+  <!-- Firebase v9 CDN (compat mode) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-l">
+    <div class="logo">SF</div>
+    <div>
+      <div class="hdr-title">ລະບົບຕິດຕາມການຜະລິດ</div>
+      <div class="hdr-sub">ໂຮງງານເສື້ອກີລາພິມລາຍ · Sport Factory</div>
+    </div>
+  </div>
+  <div class="hdr-date" id="hdrDate"></div>
+</header>
+
+<div class="main">
+  <div class="sg" id="sg"></div>
+  
+  <div class="sb-container">
+      <div class="sb-title">ສະຖານະການຜະລິດ (Production Status)</div>
+      <div class="sb" id="sb"></div>
+  </div>
+
+  <div class="tb">
+    <div class="tbl">
+      <input type="search" class="si" id="srch" placeholder="🔍 ຄົ້ນຫາລາຍການ ຫຼື ລະຫັດ..." oninput="render()">
+      <select id="fStage" onchange="render()">
+        <option value="">ທຸກຂັ້ນຕອນ</option>
+      </select>
+      <select id="fDef" onchange="render()">
+        <option value="">ທຸກລະດັບຂອງເສຍ</option>
+        <option value="ok">ປົກກະຕິ (&lt;3%)</option>
+        <option value="warn">ລະວັງ (3–5%)</option>
+        <option value="bad">ເກີນເກນ (&gt;5%)</option>
+      </select>
+    </div>
+    <button class="btn bi" onclick="document.getElementById('imp').click()">📂 ນຳເຂົ້າ JSON</button>
+    <button class="btn bx" onclick="exportData()">💾 ສົ່ງອອກ JSON</button>
+    <button class="btn bp" onclick="openModal()">➕ ເພີ່ມລາຍການໃໝ່</button>
+    <input type="file" id="imp" accept=".json" class="hidden" onchange="importData(event)">
+  </div>
+
+  <div class="tw">
+    <div class="ts">
+      <table>
+        <thead><tr>
+          <th>#</th><th>ວັນທີ່ / ສົ່ງ</th><th>ເລກ Order</th><th>ແຜນກ</th><th>ລະຫັດສິນຄ້າ / ລາຍລະອຽດ</th>
+          <th style="text-align:right">ຈຳນວນ</th><th>ຂັ້ນຕອນ</th>
+          <th>ຄວາມຄືບໜ້າ</th><th>ຂອງເສຍ</th><th>ເຄື່ອນງານ</th><th>ຈັດການ</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="fn-info">ຂໍ້ມູນ Real-time · Firebase Firestore · <span id="sync-status" style="color:#4DBF8A">🟢 ເຊື່ອມຕໍ່ແລ້ວ</span></div>
+</div>
+
+<!-- Modal -->
+<div class="ov hidden" id="ov">
+  <div class="md">
+    <div class="md-header">
+      <div class="mt" id="mttl">ເພີ່ມລາຍການຜະລິດ</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn bx" onclick="printOrder()" style="height:36px;font-size:13px">🖨️ ພິມໃບກຳກັບ</button>
+        <button class="xb" onclick="closeModal()">×</button>
+      </div>
+    </div>
+    <div class="md-body">
+      <div class="md-form-panel">
+        <div id="md-content">
+          <div class="fr">
+            <div class="fg"><label class="fl">ລະຫັດງານ *</label><input class="fi" id="fc" placeholder="JO-2026-001"></div>
+            <div class="fg"><label class="fl">ຊະນິດຜ້າ (Fabric) *</label><input class="fi" id="ffabric" placeholder="ຜ້າເມັດເຂົ້າສານ, Dry-Fit..."></div>
+          </div>
+          <div class="fg"><label class="fl">ຊື່ລາຍການ / ສີ / ໄຊ *</label><input class="fi" id="fn" placeholder="ເສື້ອໂປໂລ ສີແດງ M-XL"></div>
+          <div class="fr">
+            <div class="fg"><label class="fl">ຈຳນວນ (ຊິ້ນ) *</label><input class="fi" id="fq" type="number" min="1" placeholder="500"></div>
+            <div class="fg"><label class="fl">ຂັ້ນຕອນປັດຈຸບັນ</label>
+              <select class="fi" id="fs"></select>
+            </div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label class="fl">ຂອງເສຍ (ຊິ້ນ)</label><input class="fi" id="fd" type="number" min="0" value="0"></div>
+            <div class="fg"><label class="fl">ວັນເລີ່ມງານ</label><input class="fi" id="fst" type="date"></div>
+          </div>
+          <div class="fr">
+          <div class="fg"><label class="fl">ລູກຄ້າ / ໝາຍເຫດ</label><input class="fi" id="fno" placeholder="ຊື່ລູກຄ້າ ຫຼື ຂໍ້ມູນເພີ່ມເຕີມ..."></div>
+          <div class="fg"><label class="fl">ກຳນົດສົ່ງ</label><input class="fi" id="fdu" type="date"></div>
+        </div>
+        </div><!-- end md-content -->
+        <div id="mf" class="mf" style="margin-top:1rem;padding:1rem 0 0 0;border-top:1px solid var(--border)">
+          <button class="btn" onclick="closeModal()">ຍົກເລີກ</button>
+          <button class="btn bp" onclick="saveItem()">💾 ບັນທຶກຂໍ້ມູນ</button>
+        </div>
+      </div><!-- end md-form-panel -->
+
+      <!-- A4 PREVIEW PANEL -->
+      <div class="md-preview-panel">
+        <div style="font-size:11px;font-weight:700;color:#555;letter-spacing:.1em;text-transform:uppercase;align-self:flex-start">
+          📄 Preview ໃບກຳກັບການຜະລິດ
+        </div>
+        <div id="a4-preview" class="a4-sheet">
+          <!-- filled by updatePreview() -->
+        </div>
+      </div>
+    </div><!-- end md-body -->
+  </div><!-- end md -->
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STAGES=[
+  '1.1.1.ກໍາລັງດໍາເນີນການ',
+  '1.1.2. ກໍາລັງວາງແພັດເທີນ',
+  '1.1.3. ກໍາລັງພິມແບບ P1',
+  '1.1.4. ກໍາລັງພິມແບບ P2',
+  '1.1.5. ກໍາລັງລີດຄວາມຮ້ອນ',
+  '1.1.6. ກໍາລັງຕັດ-ຫຍິບ',
+  '1.1.7. ກໍາລັງລີດ-ພັບ',
+  '1.1.8.ກໍາລັງກວດ QC',
+  '1.1.9. ກໍາລັງຈັດສົ່ງ',
+  '1.1.10. ຈັດສົ່ງສໍາເລັດແລ້ວ'
+];
+
+const STAGE_COLORS = [
+    '#42A5F5', '#5C6BC0', '#7E57C2', '#AB47BC', '#EC407A', 
+    '#EF5350', '#FFA726', '#FFCA28', '#9CCC65', '#66BB6A'
+];
+
+// ==================== FIREBASE CONFIG ====================
+const firebaseConfig = {
+  apiKey: "AIzaSyD0-NQHpRTTCbAWTIhjhJvOzZ-6VAuziVI",
+  authDomain: "sport-factory.firebaseapp.com",
+  projectId: "sport-factory",
+  storageBucket: "sport-factory.firebasestorage.app",
+  messagingSenderId: "1001069009579",
+  appId: "1:1001069009579:web:8b9a8a10368dde2787f5ee"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+// Enable offline persistence so data survives refresh even without internet
+db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+  if (err.code === 'failed-precondition') {
+    console.warn('Persistence failed: multiple tabs open');
+  } else if (err.code === 'unimplemented') {
+    console.warn('Persistence not supported in this browser');
+  }
+});
+const COLLECTION = 'production_items';
+// ==================== END FIREBASE ====================
+
+const today=new Date(); today.setHours(0,0,0,0);
+const toISO=d=>d.toISOString().split('T')[0];
+const dAgo=n=>{const d=new Date(today);d.setDate(d.getDate()-n);return toISO(d);};
+const dDiff=s=>Math.max(0,Math.round((today-new Date(s+'T00:00:00'))/86400000));
+const dpct=(def,qty)=>qty>0?+(def/qty*100).toFixed(1):0;
+
+let items=[],nextId=1,editId=null;
+let _unsubscribe = null; // Firestore real-time listener
+
+function setSyncStatus(ok, msg='') {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  el.textContent = ok ? '🟢 ເຊື່ອມຕໍ່ແລ້ວ' : '🔴 ' + (msg || 'ບໍ່ໄດ້ເຊື່ອມຕໍ່');
+  el.style.color = ok ? '#4DBF8A' : '#FF8A80';
+}
+
+function initSelectors() {
+    const fStage = document.getElementById('fStage');
+    const fs = document.getElementById('fs');
+    STAGES.forEach(s => {
+        const opt1 = document.createElement('option');
+        opt1.value = s; opt1.textContent = s;
+        fStage.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = s; opt2.textContent = s;
+        if(fs) fs.appendChild(opt2);
+    });
+}
+
+// ---- Firestore helpers ----
+function docToItem(doc) {
+  return { id: doc.id, ...doc.data() };
+}
+
+function startRealtimeListener() {
+  if (_unsubscribe) _unsubscribe();
+  setSyncStatus(false, 'ກຳລັງເຊື່ອມຕໍ່...');
+  _unsubscribe = db.collection(COLLECTION)
+    .onSnapshot(snapshot => {
+      // Sort client-side by createdAt ascending (no index needed)
+      items = snapshot.docs
+        .map(docToItem)
+        .sort((a, b) => {
+          const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+          const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+          return ta - tb;
+        });
+      setSyncStatus(true);
+      render();
+    }, err => {
+      console.error('Firestore error:', err);
+      setSyncStatus(false, err.code || 'error');
+      // Show helpful message
+      if (err.code === 'permission-denied') {
+        document.getElementById('sync-status').textContent = '🔴 ຕັ້ງ Firestore Rules ກ່ອນ';
+      }
+    });
+}
+
+async function save() {
+  // no-op — writes go directly to Firestore in saveItem/adv/del
+}
+function load() {
+  // no-op — data comes from real-time listener
+}
+
+document.getElementById('hdrDate').textContent=
+  today.toLocaleDateString('lo-LA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+function getDefectByStage() {
+  const defectByStage = {};
+  STAGES.forEach(s => defectByStage[s] = {count: 0, items: 0});
+  items.forEach(it => {
+    if(defectByStage[it.stage]) {
+      defectByStage[it.stage].count += it.defect;
+      defectByStage[it.stage].items += it.qty;
+    }
+  });
+  return defectByStage;
+}
+
+function showDefectDetail() {
+  const defectByStage = getDefectByStage();
+  const tQ = items.reduce((s,i)=>s+i.qty,0);
+  const tD = items.reduce((s,i)=>s+i.defect,0);
+  
+  let html = '<div class="defect-modal-content">';
+  html += '<div style="margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--border)"><div style="font-size:12px; color:var(--text3); margin-bottom:6px">ສະຫຼຸບທັງໝົດ</div><div style="font-size:18px; font-weight:700; color:var(--text)">ຂອງເສຍ ' + tD + ' ຊິ້ນ / ' + tQ.toLocaleString() + ' ຊິ້ນ = ' + (tQ>0?(tD/tQ*100).toFixed(1):0) + '%</div></div>';
+  
+  STAGES.forEach((stage, idx) => {
+    const data = defectByStage[stage];
+    const pct = data.items > 0 ? (data.count / data.items * 100).toFixed(1) : 0;
+    const color = pct >= 5 ? '#FF8A80' : pct >= 3 ? '#FFB74D' : '#4DBF8A';
+    html += `<div class="defect-item">
+      <div class="defect-stage-name" style="color:${STAGE_COLORS[idx]}">${stage}</div>
+      <div class="defect-stage-count">
+        <div class="defect-percent" style="color:${color}">${pct}%</div>
+        <div class="defect-badge">${data.count} / ${data.items}</div>
+      </div>
+    </div>`;
+  });
+  
+  html += '</div>';
+  
+  document.getElementById('mttl').textContent = 'ລາຍລະອຽດຂອງເສຍຕາມຂັ້ນຕອນ';
+  document.getElementById('md-content').innerHTML = html;
+  document.getElementById('mf').innerHTML = '<button class="btn" onclick="closeModal()">ປິດ</button>';
+  document.getElementById('ov').classList.remove('hidden');
+}
+
+function rStats(){
+  const tQ=items.reduce((s,i)=>s+i.qty,0);
+  const tD=items.reduce((s,i)=>s+i.defect,0);
+  const aD=tQ>0?(tD/tQ*100).toFixed(1):0;
+  const doneStage = STAGES[STAGES.length-1];
+  const done=items.filter(i=>i.stage===doneStage).length;
+  const urg=items.filter(i=>i.due&&i.stage!==doneStage&&new Date(i.due+'T00:00:00')<=today).length;
+  document.getElementById('sg').innerHTML=`
+    <div class="sc"><div class="sl">ລາຍການທັງໝົດ</div><div class="sv">${items.length}<span class="su"> ລາຍການ</span></div></div>
+    <div class="sc"><div class="sl">ຍອດຜະລິດລວม</div><div class="sv">${tQ.toLocaleString()}<span class="su"> ຊິ້ນ</span></div></div>
+    <div class="sc" style="cursor:pointer" onclick="showDefectDetail()"><div class="sl">ຂອງເສຍສະເລ່ຍ (ຄລິກເພື່ອເບິ່ງລາຍລະອຽດ)</div><div class="sv" style="color:${aD>5?'#FF8A80':aD>3?'#FFB74D':'#4DBF8A'}"${aD}<span class="su"> %</span></div><div class="sh">${tD} ຊິ້ນ</div></div>
+    <div class="sc"><div class="sl">ສຳເລັດແລ້ວ</div><div class="sv">${done}<span class="su"> / ${items.length}</span></div></div>
+    <div class="sc${urg>0?' danger':''}"><div class="sl" style="${urg>0?'color:#FF8A80':''}">ເກີນກຳນົດສົ່ງ</div><div class="sv" style="color:${urg>0?'#FF8A80':'#4DBF8A'}">${urg}<span class="su"> ລາຍການ</span></div></div>`;
+}
+
+function rStageBar(){
+  const cnt={};STAGES.forEach(s=>cnt[s]=0);
+  items.forEach(it=>{if(cnt[it.stage]!==undefined)cnt[it.stage]++;});
+  const f=document.getElementById('fStage').value;
+  let h='';
+  STAGES.forEach((s,i)=>{
+    h+=`<span class="sp${f===s?' on':''}" onclick="setF('${s}')"><span class="sdot"></span>${s.split('.')[3] || s}<span class="sct">${cnt[s]}</span></span>`;
+  });
+  h+=`<span class="s-all" onclick="setF('')">ທັງໝົດ</span>`;
+  document.getElementById('sb').innerHTML=h;
+}
+
+function setF(s){document.getElementById('fStage').value=s;render();}
+
+function render(){
+  rStats();rStageBar();
+  const fS=document.getElementById('fStage').value;
+  const fD=document.getElementById('fDef').value;
+  const q=document.getElementById('srch').value.toLowerCase();
+  const data=items.filter(it=>{
+    if(fS&&it.stage!==fS)return false;
+    const dp=dpct(it.defect,it.qty);
+    if(fD==='ok'&&dp>=3)return false;
+    if(fD==='warn'&&(dp<3||dp>=5))return false;
+    if(fD==='bad'&&dp<5)return false;
+    const searchStr = (it.name + it.code + (it.note||'') + (it.fabric||'')).toLowerCase();
+    if(q && !searchStr.includes(q)) return false;
+    return true;
+  });
+  const tb=document.getElementById('tbody');
+  if(!data.length){
+    const syncEl = document.getElementById('sync-status');
+    const isConnecting = syncEl && syncEl.textContent.includes('ກຳລັງ');
+    tb.innerHTML=`<tr><td class="ec" colspan="11">${isConnecting ? '⏳ ກຳລັງໂຫລດຂໍ້ມູນ...' : 'ບໍ່ພົບລາຍການທີ່ຕົງກັບເງື່ອນໄຂ'}</td></tr>`;
+    return;
+  }
+  
+  const doneStage = STAGES[STAGES.length-1];
+  
+  tb.innerHTML=data.map((it,i)=>{
+    const stageIdx = STAGES.indexOf(it.stage);
+    const prog=Math.round((stageIdx+1)/STAGES.length*100);
+    const dp=dpct(it.defect,it.qty);
+    const days=dDiff(it.start||it.orderdate||toISO(today));
+    const dCls=dp<3?'dok':dp<5?'dwn':'dbd';
+    const yCls=days<=5?'dok2':days<=10?'dwn2':'dbd2';
+    const fmtDate=d=>d?new Date(d+'T00:00:00').toLocaleDateString('lo-LA',{day:'2-digit',month:'short',year:'2-digit'}):'—';
+    const ov=it.due&&it.stage!==doneStage&&new Date(it.due+'T00:00:00')<=today;
+    const stageColor = STAGE_COLORS[stageIdx] || '#555';
+    const isDone = it.stage === doneStage;
+    const deptColor = it.dept==='SALE'?'#EF5350':it.dept==='MARKETING'?'#66BB6A':it.dept==='ATP'?'#42A5F5':'#9E9E9E';
+    const statusOk = it.orderstatus&&it.orderstatus.includes('ສຳເລັດ');
+    
+    return `<tr>
+      <td style="color:var(--text3);font-size:12px;font-family:var(--mono)">${i+1}</td>
+      <td style="font-size:11px;font-family:var(--mono);white-space:nowrap">
+        <div style="color:var(--text2)">${fmtDate(it.orderdate||it.start)}</div>
+        ${it.due?`<div style="color:${ov?'#FF8A80':'var(--text3)'}">→ ${fmtDate(it.due)}</div>`:''}
+      </td>
+      <td>
+        <div class="ic" style="font-weight:700">${it.code}</div>
+        ${it.orderstatus?`<div style="font-size:10px;margin-top:3px;color:${statusOk?'#4DBF8A':'#FFB74D'}">${it.orderstatus}</div>`:''}
+        ${ov?`<div class="ot">⚠️ ເກີນກຳນົດ</div>`:''}
+      </td>
+      <td>
+        ${it.dept?`<span style="font-size:11px;font-weight:700;color:${deptColor};background:${deptColor}20;padding:3px 8px;border-radius:4px;border:1px solid ${deptColor}40">${it.dept}</span>`:'<span style="color:var(--text3)">—</span>'}
+      </td>
+      <td>
+        <div class="in">${it.name}</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;margin-top:4px">
+            ${it.worktype?`<span style="font-size:11px;color:#FFB74D;background:rgba(255,183,77,0.1);padding:2px 6px;border-radius:4px">⚙️ ${it.worktype}</span>`:''}
+            ${it.fabric?`<span class="ifabric">🧵 ${it.fabric}</span>`:''}
+            ${it.note?`<span class="ino">${it.note}</span>`:''}
+        </div>
+      </td>
+      <td class="qt">${it.qty.toLocaleString()}</td>
+      <td><span class="badge ${isDone?'b-done':'b-active'}" style="${!isDone?`border-color:${stageColor}; color:${stageColor}; background:${stageColor}15`:''}">${it.stage}</span></td>
+      <td><div class="pw"><div class="pb"><div class="pf" style="width:${prog}%;background:${stageColor}"></div></div><span class="pp">${prog}%</span></div></td>
+      <td><span class="${dCls}">${dp}%</span><span class="ds"> (${it.defect})</span></td>
+      <td><span class="dc"><span class="dd ${yCls}">${days}</span>ວັນ</span></td>
+      <td>
+        <div class="act-cell">
+            <button class="ab" title="ແກ້ໄຂ" onclick="openEdit('${it.id}')">✏️</button>
+            <button class="ab ab-next" title="ຂັ້ນຕອນຕໍ່ໄປ" onclick="adv('${it.id}')">➡️</button>
+            <button class="ab ab-del" title="ລຶບ" onclick="del('${it.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function populateStageOptions(selectElement) {
+  selectElement.innerHTML = '';
+  STAGES.forEach(stage => {
+    const opt = document.createElement('option');
+    opt.value = stage;
+    opt.textContent = stage;
+    selectElement.appendChild(opt);
+  });
+}
+
+function getModalFormHTML(isEdit=false) {
+  return `
+    ${!isEdit ? `
+    <div class="gs-search-box">
+      <div class="gs-search-hdr">🔗 ດຶງຂໍ້ມູນຈາກ Google Sheet</div>
+      <div class="gs-search-row">
+        <input class="fi" id="gs-inv-input" placeholder="ພິມເລກບິນ INV... ແລ້ວກົດຊອກຫາ" onkeydown="if(event.key==='Enter')searchByINV()" style="flex:1">
+        <button class="btn bi" onclick="searchByINV()" style="height:42px;white-space:nowrap;flex-shrink:0">🔍 ຊອກຫາ</button>
+        <button class="btn" onclick="fetchFromSheet()" id="gsBtn" style="height:42px;white-space:nowrap;flex-shrink:0">📋 ທັງໝົດ</button>
+      </div>
+      <div id="gs-picker-wrap"></div>
+    </div>` : ''}
+    <div class="form-section-label">📋 ຂໍ້ມູນ Order</div>
+    <div class="fr3">
+      <div class="fg"><label class="fl">ວັນທີ່ຮັບ Order <span class="col-hint">(Col C)</span></label><input class="fi" id="forderdate" type="date"></div>
+      <div class="fg"><label class="fl">ວັນກຳນົດສົ່ງ <span class="col-hint">(Col D)</span></label><input class="fi" id="fdu" type="date"></div>
+      <div class="fg"><label class="fl">ເລກບິນ / INV * <span class="col-hint">(Col E)</span></label><input class="fi" id="fc" placeholder="INV02822"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">ສະຖານະ Order</label>
+        <select class="fi" id="forderstatus">
+          <option value="">-- ເລືອກສະຖານະ --</option>
+          <option value="ກຳລັງດຳເນີນການ">ກຳລັງດຳເນີນການ</option>
+          <option value="ກຳລັງວາງແພັດເທີນ">ກຳລັງວາງແພັດເທີນ</option>
+          <option value="ກຳລັງພິມແບບ P1">ກຳລັງພິມແບບ P1</option>
+          <option value="ກຳລັງພິມແບບ P2">ກຳລັງພິມແບບ P2</option>
+          <option value="ກຳລັງລີດຄວາມຮ້ອນ">ກຳລັງລີດຄວາມຮ້ອນ</option>
+          <option value="ກຳລັງຕັດ-ຫຍິບ">ກຳລັງຕັດ-ຫຍິບ</option>
+          <option value="ກຳລັງລີດ-ພັບ">ກຳລັງລີດ-ພັບ</option>
+          <option value="ກຳລັງຈັດສົ່ງ">ກຳລັງຈັດສົ່ງ</option>
+          <option value="ຈັດສົ່ງສຳເລັດແລ້ວ">ຈັດສົ່ງສຳເລັດແລ້ວ</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">ປະເພດ / ແຜນກ</label>
+        <select class="fi" id="fdept">
+          <option value="">-- ເລືອກ --</option>
+          <option value="SALE">SALE</option>
+          <option value="MARKETING">MARKETING</option>
+          <option value="ATP">ATP</option>
+          <option value="OTHER">OTHER</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-section-label" style="margin-top:4px">🧵 ຂໍ້ມູນສິນຄ້າ</div>
+    <div class="fr">
+      <div class="fg"><label class="fl">ຊື່ທີມ / ລະຫັດສິນຄ້າ * <span class="col-hint">(Col I)</span></label><input class="fi" id="fn" placeholder="CH-0005, SP-Bun Taeng..."></div>
+      <div class="fg"><label class="fl">ຈຳນວນ (ຊິ້ນ) * <span class="col-hint">(Col J)</span></label><input class="fi" id="fq" type="number" min="1" placeholder="15"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">ປະເພດຄໍເສື້ອ <span class="col-hint">(Col K)</span></label><input class="fi" id="fworktype" placeholder="ຄັນຍຈອດ, POLO, ກົມ..."></div>
+      <div class="fg"><label class="fl">ປະເພດຜ້າ <span class="col-hint">(Col L)</span></label><input class="fi" id="ffabric" placeholder="ແພໃນໂກຣົບ, Dry-Fit..."></div>
+    </div>
+    <div class="form-section-label" style="margin-top:4px">🖼️ ຮູບພາບເສື້ອ (ສຳລັບໃບກຳກັບ)</div>
+    <div class="img-thumbs" id="img-thumbs"></div>
+    <div class="upload-zone" onclick="document.getElementById('img-upload').click()">
+      <input type="file" id="img-upload" accept="image/*" multiple onchange="handleImgUpload(event)">
+      <div>📎 ຄລິກເພື່ອແນບຮູບເສື້ອ (ໄດ້ຫຼາຍຮູບ)</div>
+      <div style="font-size:10px;margin-top:4px;color:var(--text3)">JPG, PNG — ຮູບຈະສະແດງໃນໃບກຳກັບ</div>
+    </div>
+    <div class="form-section-label" style="margin-top:4px">📸 ຮູບລາຍລະອຽດ (ແຄັບໜ້າຈໍ / Screenshot)</div>
+    <div class="detail-img-zone" id="detail-img-zone"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="handleDetailImgDrop(event)">
+      <input type="file" id="detail-img-input" accept="image/*" multiple style="display:none" onchange="handleDetailImgPick(event)">
+      <div id="detail-img-preview" class="detail-img-preview"></div>
+      <div class="detail-img-hint" id="detail-img-hint">
+        <div style="font-size:28px">📋</div>
+        <div style="font-weight:700;margin-top:4px">ລາກ &amp; ວາງ ຫຼື ຄລິກເພື່ອແນບຮູບ</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">ແຄັບໜ້າຈໍລາຍລະອຽດຜູ້ເລ່ນ, ໄຊ, ເບີ — ໄດ້ຫຼາຍຮູບ</div>
+        <button class="btn bi" style="height:34px;font-size:12px;margin-top:10px" onclick="document.getElementById('detail-img-input').click()">📎 ເລືອກຮູບ</button>
+      </div>
+    </div>
+    <div class="form-section-label" style="margin-top:4px">⚙️ ຂໍ້ມູນການຜະລິດ</div>
+    <div class="fr3">
+      <div class="fg"><label class="fl">ຂັ້ນຕອນປັດຈຸບັນ</label><select class="fi" id="fs"></select></div>
+      <div class="fg"><label class="fl">ວັນເລີ່ມງານ</label><input class="fi" id="fst" type="date"></div>
+      <div class="fg"><label class="fl">ຂອງເສຍ (ຊິ້ນ)</label><input class="fi" id="fd" type="number" min="0" value="0"></div>
+    </div>
+    <div class="fg"><label class="fl">ໝາຍເຫດ / ລູກຄ້າ</label><input class="fi" id="fno" placeholder="ຊື່ລູກຄ້າ ຫຼື ຂໍ້ມູນເພີ່ມເຕີມ..."></div>
+  `;
+}
+
+function openModal(){
+  editId=null;
+  document.getElementById('mttl').textContent='ເພີ່ມລາຍການຜະລິດໃໝ່';
+  document.getElementById('md-content').innerHTML = getModalFormHTML(false);
+  document.getElementById('mf').innerHTML = '<button class="btn" onclick="closeModal()">ຍົກເລີກ</button><button class="btn bp" onclick="saveItem()">ບັນທຶກຂໍ້ມູນ</button>';
+  
+  const fsSelect = document.getElementById('fs');
+  populateStageOptions(fsSelect);
+  fsSelect.value = STAGES[0];
+  
+  document.getElementById('fc').value='';
+  document.getElementById('fn').value='';
+  document.getElementById('ffabric').value='';
+  document.getElementById('fno').value='';
+  document.getElementById('fq').value='';
+  document.getElementById('fd').value='0';
+  document.getElementById('fst').value=toISO(today);
+  document.getElementById('forderdate').value=toISO(today);
+  document.getElementById('fdu').value='';
+  uploadedImages = [];
+  detailImages = [];
+  document.getElementById('ov').classList.remove('hidden');
+  setTimeout(() => { renderDetailImgs(); bindPreviewListeners(); }, 50);
+}
+
+function openEdit(id){
+  const it=items.find(i=>String(i.id)===String(id));if(!it)return;
+  editId=String(id);
+  document.getElementById('mttl').textContent='ແກ້ໄຂລາຍການຜະລິດ';
+  document.getElementById('md-content').innerHTML = getModalFormHTML(true);
+  document.getElementById('mf').innerHTML = '<button class="btn" onclick="closeModal()">ຍົກເລີກ</button><button class="btn bp" onclick="saveItem()">ບັນທຶກຂໍ້ມູນ</button>';
+  
+  const fsSelect = document.getElementById('fs');
+  populateStageOptions(fsSelect);
+  
+  document.getElementById('fc').value=it.code||'';
+  document.getElementById('fn').value=it.name||'';
+  document.getElementById('ffabric').value=it.fabric||'';
+  document.getElementById('fq').value=it.qty||'';
+  document.getElementById('fs').value=it.stage||STAGES[0];
+  document.getElementById('fd').value=it.defect||0;
+  document.getElementById('fst').value=it.start||'';
+  document.getElementById('fno').value=it.note||'';
+  document.getElementById('fdu').value=it.due||'';
+  document.getElementById('forderdate').value=it.orderdate||'';
+  if(it.orderstatus) document.getElementById('forderstatus').value=it.orderstatus;
+  if(it.dept) document.getElementById('fdept').value=it.dept;
+  if(it.worktype) document.getElementById('fworktype').value=it.worktype;
+  uploadedImages = it.images ? [...it.images] : [];
+  detailImages = it.detailImages ? [...it.detailImages] : [];
+  document.getElementById('ov').classList.remove('hidden');
+  setTimeout(() => { renderThumbs(); renderDetailImgs(); bindPreviewListeners(); }, 50);
+}
+
+function closeModal(){document.getElementById('ov').classList.add('hidden');}
+document.getElementById('ov').addEventListener('click',e=>{if(e.target===document.getElementById('ov'))closeModal();});
+
+async function saveItem(){
+  const code=document.getElementById('fc').value.trim();
+  const name=document.getElementById('fn').value.trim();
+  const qty=parseInt(document.getElementById('fq').value)||0;
+  if(!code||!name||!qty){toast('⚠️ ກະລຸນາໃສ່: ເລກ Order, ລະຫັດສິນຄ້າ ແລະ ຈຳນວນ');return;}
+  const obj={
+    code,
+    name,
+    qty,
+    fabric:document.getElementById('ffabric').value.trim(),
+    stage:document.getElementById('fs').value,
+    defect:parseInt(document.getElementById('fd').value)||0,
+    start:document.getElementById('fst').value,
+    note:document.getElementById('fno').value.trim(),
+    due:document.getElementById('fdu').value,
+    orderdate:document.getElementById('forderdate').value,
+    orderstatus:document.getElementById('forderstatus').value,
+    dept:document.getElementById('fdept').value,
+    worktype:document.getElementById('fworktype').value,
+    images:[...uploadedImages],
+    detailImages:[...detailImages],
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  // Close modal immediately for snappy UX
+  closeModal();
+  toast('⏳ ກຳລັງບັນທຶກ...');
+  try {
+    if(editId){
+      await db.collection(COLLECTION).doc(editId).update(obj);
+      toast('✅ ບັນທຶກການແກ້ໄຂສຳເລັດ');
+    } else {
+      obj.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection(COLLECTION).add(obj);
+      toast('✅ ເພີ່ມລາຍການໃໝ່ສຳເລັດ');
+    }
+  } catch(e) {
+    toast('❌ ບັນທຶກບໍ່ໄດ້: ' + e.message);
+    console.error(e);
+  }
+}
+
+async function adv(id){
+  const it=items.find(i=>String(i.id)===String(id));if(!it)return;
+  const idx=STAGES.indexOf(it.stage);
+  if(idx<STAGES.length-1){
+    const nextStage=STAGES[idx+1];
+    try {
+      await db.collection(COLLECTION).doc(id).update({
+        stage: nextStage,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      toast(`➡️ ເລື່ອນເປັນ "${nextStage}"`);
+    } catch(e){ toast('❌ '+e.message); }
+  } else toast('✨ ລາຍການນີ້ສຳເລັດແລ້ວ');
+}
+
+async function del(id){
+  const it=items.find(i=>String(i.id)===String(id));if(!it)return;
+  if(!confirm(`ຢືນຢັນການລຶບລາຍການ "${it.name}"?`))return;
+  try {
+    await db.collection(COLLECTION).doc(id).delete();
+    toast('🗑️ ລຶບລາຍການສຳເລັດ');
+  } catch(e){ toast('❌ '+e.message); }
+}
+
+function exportData(){
+  const b=new Blob([JSON.stringify({items,nextId,exportDate:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download=`production_sf_${toISO(today)}.json`;
+  a.click();toast('💾 ສົ່ງອອກໄຟລ໌ສຳເລັດ');
+}
+
+function importData(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.items){items=d.items;nextId=d.nextId||items.reduce((m,i)=>Math.max(m,i.id),0)+1;save();render();toast('📂 ນຳເຂົ້າຂໍ້ມູນສຳເລັດ');}
+      else toast('❌ ໄຟລ໌ບໍ່ຖືກຕ້ອງ');
+    }catch{toast('❌ ອ່ານໄຟລ໌ບໍ່ໄດ້');}
+  };
+  r.readAsText(f);e.target.value='';
+}
+
+let tt;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// ==================== GOOGLE SHEET INTEGRATION ====================
+const SHEET_ID = '1lPp5LuwT6lAt0wozRduI8ErarHk-5iwI5PWoZwmTZoY';
+const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
+const CORS_PROXY = `https://api.allorigins.win/raw?url=`;
+
+// ========== FIXED COLUMN INDEX MAP (0-based) ==========
+// C=2  วันที่รับออเดอร์
+// D=3  วันกำหนดส่ง
+// E=4  เลขบิล / INV
+// I=8  ชื่อทีม / ลหัดสินค้า
+// J=9  จำนวน
+// K=10 ประเภทคอเสื้อ
+// L=11 ประเภทผ้า
+const COL = { orderdate:2, due:3, code:4, name:8, qty:9, worktype:10, fabric:11 };
+
+// Cache sheet data so we don't re-fetch when user searches
+let _sheetRows = null;
+
+function parseCSV(text) {
+  const rows = [];
+  const lines = text.split('\n');
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; continue; }
+      if (ch === ',' && !inQ) { cols.push(cur); cur = ''; continue; }
+      cur += ch;
+    }
+    cols.push(cur.replace(/\r/g,''));
+    rows.push(cols);
+  }
+  return rows;
+}
+
+function parseSheetDate(str) {
+  if (!str) return '';
+  str = str.trim();
+  let dt = new Date(str);
+  if (!isNaN(dt) && str.includes('-')) return toISO(dt);
+  // handle d/m/yy or d/m/yyyy
+  const parts = str.split('/');
+  if (parts.length === 3) {
+    let [dd, mm, yy] = parts.map(p => p.trim());
+    if (yy.length === 2) yy = '20' + yy;
+    dt = new Date(`${yy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`);
+    if (!isNaN(dt)) return toISO(dt);
+  }
+  return '';
+}
+
+function rowToData(row) {
+  const g = (idx) => (row[idx] || '').trim();
+  return {
+    orderdate : g(COL.orderdate),
+    due       : g(COL.due),
+    code      : g(COL.code),
+    name      : g(COL.name),
+    qty       : g(COL.qty),
+    worktype  : g(COL.worktype),
+    fabric    : g(COL.fabric),
+  };
+}
+
+// Multiple CORS proxies — try each until one works
+const CORS_PROXIES = [
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://cors-anywhere.herokuapp.com/${url}`,
+  url => `https://thingproxy.freeboard.io/fetch/${url}`,
+];
+
+async function loadSheetRows() {
+  if (_sheetRows) return _sheetRows;
+  let lastErr = null;
+  for (const proxyFn of CORS_PROXIES) {
+    try {
+      const proxyUrl = proxyFn(SHEET_CSV_URL);
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) continue;
+      const csv = await res.text();
+      if (!csv || csv.length < 10) continue;
+      const rows = parseCSV(csv);
+      if (!rows || rows.length < 2) continue;
+      _sheetRows = rows.slice(1).filter(r => (r[COL.code]||'').trim());
+      return _sheetRows;
+    } catch(e) { lastErr = e; }
+  }
+  throw new Error('ເຊື່ອມຕໍ່ Sheet ບໍ່ໄດ້ — ກວດສອບວ່າ Sheet ແຊ "Anyone with the link" ແລ້ວລອງໃໝ່');
+}
+
+// Called when user types in the INV search box
+async function searchByINV() {
+  const inp = document.getElementById('gs-inv-input');
+  const wrap = document.getElementById('gs-picker-wrap');
+  const q = (inp ? inp.value.trim().toLowerCase() : '');
+
+  wrap.innerHTML = `<div class="gs-loading">🔄 ກຳລັງໂຫລດ...</div>`;
+  try {
+    const rows = await loadSheetRows();
+    const matched = q
+      ? rows.filter(r => (r[COL.code]||'').toLowerCase().includes(q))
+      : rows;
+
+    if (!matched.length) {
+      wrap.innerHTML = `<div class="gs-picker"><div class="gs-err">ບໍ່ພົບ INV "<b>${q}</b>" ໃນ Sheet</div></div>`;
+      return;
+    }
+    renderPickerRows(matched, wrap);
+  } catch(err) {
+    wrap.innerHTML = `<div class="gs-picker"><div class="gs-err">❌ ${err.message}<br><small style="color:var(--text3)">ກວດສອບ: Sheet ຕ້ອງແຊ "Anyone with the link"</small></div></div>`;
+  }
+}
+
+function renderPickerRows(rows, wrap) {
+  let html = `<div class="gs-picker">
+    <div class="gs-picker-hdr">
+      <span>📋 ຜົນລັບ ${rows.length} ລາຍການ — ຄລິກເພື່ອຕື່ມຂໍ້ມູນ</span>
+      <span class="gs-tag">Col C D E I J K L</span>
+    </div>`;
+
+  rows.forEach(row => {
+    const d = rowToData(row);
+    if (!d.code) return;
+    const dataAttr = encodeURIComponent(JSON.stringify(d));
+    html += `<div class="gs-row" onclick="fillFromSheet('${dataAttr}')">
+      <div>
+        <div style="font-weight:700;font-size:13px;color:var(--text)">${d.name || '—'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">
+          ${d.orderdate ? '📅 ' + d.orderdate : ''}${d.due ? ' → ສົ່ງ ' + d.due : ''}
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div class="gs-row-code">${d.code}</div>
+        ${d.worktype ? `<div style="font-size:10px;color:#FFB74D;margin-top:2px">${d.worktype}</div>` : ''}
+      </div>
+      <div style="text-align:right">
+        ${d.qty ? `<div class="gs-row-qty">${d.qty} ຊິ້ນ</div>` : ''}
+        ${d.fabric ? `<div style="font-size:10px;color:#42A5F5;margin-top:2px">${d.fabric}</div>` : ''}
+      </div>
+    </div>`;
+  });
+
+  html += `</div>`;
+  wrap.innerHTML = html;
+}
+
+// Legacy button "ດຶງທັງໝົດ" still works
+async function fetchFromSheet() {
+  const btn = document.getElementById('gsBtn');
+  const wrap = document.getElementById('gs-picker-wrap');
+  if (!btn || !wrap) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ ກຳລັງດຶງ...';
+  wrap.innerHTML = `<div class="gs-loading">🔄 ກຳລັງໂຫລດ Google Sheet...</div>`;
+  try {
+    _sheetRows = null; // force refresh
+    const rows = await loadSheetRows();
+    renderPickerRows(rows, wrap);
+    btn.textContent = '🔄 ດຶງໃໝ່';
+  } catch(err) {
+    wrap.innerHTML = `<div class="gs-picker"><div class="gs-err">❌ ${err.message}</div></div>`;
+    btn.textContent = '🔄 ລອງໃໝ່';
+  }
+  btn.disabled = false;
+}
+
+function fillFromSheet(dataAttr) {
+  try {
+    const d = JSON.parse(decodeURIComponent(dataAttr));
+    const setVal = (id, val) => { const el = document.getElementById(id); if(el && val !== undefined) el.value = val; };
+
+    setVal('fc',       d.code);
+    setVal('fn',       d.name);
+    setVal('fq',       d.qty ? (parseInt(d.qty) || '') : '');
+    setVal('ffabric',  d.fabric);
+    setVal('fworktype', d.worktype);
+
+    const ordParsed = parseSheetDate(d.orderdate);
+    const dueParsed = parseSheetDate(d.due);
+    if (ordParsed) { setVal('forderdate', ordParsed); setVal('fst', ordParsed); }
+    if (dueParsed) setVal('fdu', dueParsed);
+
+    document.getElementById('gs-picker-wrap').innerHTML =
+      `<div class="gs-filled-ok">✅ ດຶງຂໍ້ມູນ <b>${d.code}</b> ສຳເລັດ — ກວດສອບ ແລະ ແກ້ໄຂໄດ້ດ້ານລຸ່ມ</div>`;
+    toast('✅ ຕື່ມຂໍ້ມູນຈາກ Google Sheet ສຳເລັດ');
+  } catch(e) {
+    toast('❌ ຕື່ມຂໍ້ມູນບໍ່ໄດ້: ' + e.message);
+  }
+}
+// ==================== END GOOGLE SHEET ====================
+
+// ==================== PLAYER ROWS ====================
+let playerRows = []; // [{name, number, size, qty, note}]
+const SIZE_OPTS_LIST = ['XS','S','M','L','XL','2XL','3XL','4XL'];
+
+function addPlayerRow(data={}) {
+  playerRows.push({ name: data.name||'', number: data.number||'', size: data.size||'', qty: data.qty||'1', note: data.note||'' });
+  renderPlayerRows();
+  updatePreview();
+}
+
+function removePlayerRow(i) {
+  playerRows.splice(i, 1);
+  renderPlayerRows();
+  updatePreview();
+}
+
+function playerRowChanged(i, field, val) {
+  if (playerRows[i]) { playerRows[i][field] = val; updatePreview(); }
+}
+
+function renderPlayerRows() {
+  const wrap = document.getElementById('player-rows');
+  if (!wrap) return;
+  if (playerRows.length === 0) { wrap.innerHTML = ''; return; }
+  const sizeOptions = SIZE_OPTS_LIST.map(s => `<option value="${s}">${s}</option>`).join('');
+  wrap.innerHTML = playerRows.map((p, i) => `
+    <div class="player-row">
+      <span class="p-num">${i+1}</span>
+      <input value="${p.name}" placeholder="ຊື່..." oninput="playerRowChanged(${i},'name',this.value)" style="border-right:1px solid var(--border)">
+      <input value="${p.number}" placeholder="00" oninput="playerRowChanged(${i},'number',this.value)" style="text-align:center;font-weight:700;color:var(--red-lite);border-right:1px solid var(--border)">
+      <select onchange="playerRowChanged(${i},'size',this.value)" style="border-right:1px solid var(--border)">
+        <option value="">-ໄຊ-</option>${sizeOptions}
+      </select>
+      <input value="${p.qty||1}" type="number" min="1" max="99" oninput="playerRowChanged(${i},'qty',this.value)" style="text-align:center;border-right:1px solid var(--border)">
+      <input value="${p.note}" placeholder="ໝາຍເຫດ..." oninput="playerRowChanged(${i},'note',this.value)" style="border-right:1px solid var(--border)">
+      <button class="rm-player" onclick="removePlayerRow(${i})">🗑</button>
+    </div>`).join('');
+  // restore size selects
+  playerRows.forEach((p, i) => {
+    const sel = wrap.querySelectorAll('select')[i];
+    if (sel && p.size) sel.value = p.size;
+  });
+}
+
+function initPlayerRows(saved=[]) {
+  playerRows = saved.length > 0 ? [...saved] : [];
+  // always start with at least 5 blank rows for new items
+  if (saved.length === 0) {
+    for (let i = 0; i < 5; i++) addPlayerRow();
+    return;
+  }
+  renderPlayerRows();
+  updatePreview();
+}
+// ==================== END PLAYER ROWS ====================
+
+// ==================== DETAIL IMAGES (screenshot of player list) ====================
+let detailImages = []; // separate from jersey images
+
+function handleDetailImgDrop(e) {
+  e.preventDefault();
+  document.getElementById('detail-img-zone').classList.remove('drag-over');
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  readDetailFiles(files);
+}
+
+function handleDetailImgPick(e) {
+  readDetailFiles(Array.from(e.target.files));
+  e.target.value = '';
+}
+
+function readDetailFiles(files) {
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      detailImages.push(ev.target.result);
+      renderDetailImgs();
+      updatePreview();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeDetailImg(i) {
+  detailImages.splice(i, 1);
+  renderDetailImgs();
+  updatePreview();
+}
+
+function renderDetailImgs() {
+  const preview = document.getElementById('detail-img-preview');
+  const hint = document.getElementById('detail-img-hint');
+  if (!preview) return;
+  if (detailImages.length === 0) {
+    preview.innerHTML = '';
+    if (hint) hint.style.display = 'block';
+    return;
+  }
+  if (hint) hint.style.display = 'none';
+  preview.innerHTML = detailImages.map((src, i) => `
+    <div class="detail-img-thumb">
+      <img src="${src}" onclick="document.getElementById('detail-img-input').click()">
+      <button class="rm-detail" onclick="removeDetailImg(${i})">×</button>
+    </div>`).join('');
+  // also show add more button
+  preview.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;min-width:80px">
+    <button class="btn bi" style="height:34px;font-size:12px;flex-direction:column;gap:2px" onclick="document.getElementById('detail-img-input').click()">＋<div style="font-size:9px">ເພີ່ມ</div></button>
+  </div>`;
+}
+// ==================== END DETAIL IMAGES ====================
+
+// ==================== IMAGE UPLOAD ====================
+let uploadedImages = []; // array of base64 strings
+
+function handleImgUpload(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      uploadedImages.push(ev.target.result);
+      renderThumbs();
+      updatePreview();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function renderThumbs() {
+  const wrap = document.getElementById('img-thumbs');
+  if (!wrap) return;
+  wrap.innerHTML = uploadedImages.map((src, i) => `
+    <div class="img-thumb">
+      <img src="${src}">
+      <button class="rm-btn" onclick="removeImg(${i})">×</button>
+    </div>`).join('');
+}
+
+function removeImg(i) {
+  uploadedImages.splice(i, 1);
+  renderThumbs();
+  updatePreview();
+}
+
+// ==================== A4 PREVIEW ====================
+function getFormVal(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+function fmtDateDisp(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T00:00:00');
+  if (isNaN(dt)) return d;
+  return dt.toLocaleDateString('lo-LA', {day:'2-digit', month:'short', year:'numeric'});
+}
+
+function updatePreview() {
+  const preview = document.getElementById('a4-preview');
+  if (!preview) return;
+
+  const inv       = getFormVal('fc')         || '—';
+  const teamName  = getFormVal('fn')         || '—';
+  const qty       = getFormVal('fq')         || '—';
+  const collar    = getFormVal('fworktype')  || '—';
+  const fabric    = getFormVal('ffabric')    || '—';
+  const orderdate = fmtDateDisp(getFormVal('forderdate'));
+  const duedate   = fmtDateDisp(getFormVal('fdu'));
+  const stage     = getFormVal('fs')         || STAGES[0];
+  const defect    = getFormVal('fd')         || '0';
+  const note      = getFormVal('fno')        || '';
+  const dept      = getFormVal('fdept')      || '';
+  const status    = getFormVal('forderstatus') || '';
+  const startdate = fmtDateDisp(getFormVal('fst'));
+  const printDate = new Date().toLocaleDateString('lo-LA', {day:'2-digit', month:'short', year:'numeric'});
+  const stageIdx  = STAGES.indexOf(stage);
+  const prog      = Math.round((stageIdx + 1) / STAGES.length * 100);
+
+  // Build image grid (1 wide image for jersey design)
+  const imgSlots = uploadedImages.length > 0
+    ? uploadedImages.slice(0,2).map(src => `<div class="a4-img-box" style="height:120px"><img src="${src}"></div>`).join('')
+    : `<div class="a4-img-box" style="height:120px"><div class="a4-img-placeholder">🏅<div>ຮູບແບບເສື້ອ</div></div></div>
+       <div class="a4-img-box" style="height:120px"><div class="a4-img-placeholder">📐<div>ຮູບລາຍລະອຽດ</div></div></div>`;
+
+  // Detail images (screenshots of player list)
+  const detImgs = typeof detailImages !== 'undefined' ? detailImages : [];
+  let playerTableHTML;
+  if (detImgs.length === 0) {
+    playerTableHTML = `<div class="a4-detail-placeholder">📋 ແນບຮູບ screenshot ລາຍລະອຽດຜູ້ເລ່ນໃນຟອມ</div>`;
+  } else {
+    playerTableHTML = `<div class="a4-detail-imgs">${
+      detImgs.map(src => `<div class="a4-detail-img-wrap"><img src="${src}"></div>`).join('')
+    }</div>`;
+  }
+
+  preview.innerHTML = `
+    <div class="a4-hdr">
+      <div class="a4-logo-box">
+        <div class="a4-logo">SF</div>
+        <div>
+          <div class="a4-company">ໂຮງງານເສື້ອກີລາພິມລາຍ</div>
+          <div class="a4-company-sub">Sport Factory · ລະບົບຕິດຕາມການຜະລິດ</div>
+        </div>
+      </div>
+      <div class="a4-doc-title">
+        <h2>ໃບກຳກັບການຜະລິດ</h2>
+        <div class="a4-inv">${inv}</div>
+        <div style="font-size:9px;color:#999;margin-top:2px">ພິມວັນທີ: ${printDate}</div>
+      </div>
+    </div>
+
+    <div class="a4-meta">
+      <div class="a4-meta-row"><span class="a4-meta-label">ວັນທີ່ຮັບ Order:</span><span class="a4-meta-val">${orderdate}</span></div>
+      <div class="a4-meta-row"><span class="a4-meta-label">ກຳນົດສົ່ງ:</span><span class="a4-meta-val" style="color:#E53935;font-weight:700">${duedate}</span></div>
+      <div class="a4-meta-row"><span class="a4-meta-label">ຊື່ທີມ / ລະຫັດ:</span><span class="a4-meta-val">${teamName}</span></div>
+      <div class="a4-meta-row"><span class="a4-meta-label">ຈຳນວນ:</span><span class="a4-meta-val">${qty} ຊິ້ນ</span></div>
+      <div class="a4-meta-row"><span class="a4-meta-label">ປະເພດຄໍ:</span><span class="a4-meta-val">${collar}</span></div>
+      <div class="a4-meta-row"><span class="a4-meta-label">ປະເພດຜ້າ:</span><span class="a4-meta-val">${fabric}</span></div>
+      ${dept ? `<div class="a4-meta-row"><span class="a4-meta-label">ແຜນກ:</span><span class="a4-meta-val">${dept}</span></div>` : ''}
+      ${status ? `<div class="a4-meta-row"><span class="a4-meta-label">ສະຖານະ:</span><span class="a4-meta-val">${status}</span></div>` : ''}
+      <div class="a4-meta-row"><span class="a4-meta-label">ວັນເລີ່ມງານ:</span><span class="a4-meta-val">${startdate}</span></div>
+      <div class="a4-meta-row"><span class="a4-meta-label">ຂອງເສຍ:</span><span class="a4-meta-val">${defect} ຊິ້ນ</span></div>
+    </div>
+
+    ${note ? `<div style="padding:6px 10px;background:#fff8e1;border:1px solid #ffe082;border-radius:4px;font-size:11px;margin-bottom:10px"><b>ໝາຍເຫດ:</b> ${note}</div>` : ''}
+
+    <div class="a4-img-section">
+      <div class="a4-img-label">ຮູບພາບເສື້ອ / ແບບ</div>
+      <div class="a4-img-row">${imgSlots}</div>
+    </div>
+
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;border-bottom:1.5px solid #111;padding-bottom:3px">
+        ລາຍລະອຽດຜູ້ເລ່ນ / Player Details
+      </div>
+      ${playerTableHTML}
+    </div>
+
+    <div style="margin-bottom:8px">
+      <div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">ຂັ້ນຕອນ — ${stage} (${prog}%)</div>
+      <div style="height:5px;background:#eee;border-radius:3px">
+        <div style="height:100%;width:${prog}%;background:#E53935;border-radius:3px"></div>
+      </div>
+    </div>
+
+    <div class="a4-sign">
+      <div class="a4-sign-box"><div class="a4-sign-line"></div><div class="a4-sign-label">ຜູ້ຮັບ Order</div></div>
+      <div class="a4-sign-box"><div class="a4-sign-line"></div><div class="a4-sign-label">ຫົວໜ້າຝ່າຍຜະລິດ</div></div>
+      <div class="a4-sign-box"><div class="a4-sign-line"></div><div class="a4-sign-label">QC / ກວດສອບ</div></div>
+    </div>
+
+    <div class="a4-footer">
+      ລະບົບຕິດຕາມການຜະລິດ Sport Factory · ສ້າງອັດຕະໂນມັດ · ${printDate}
+    </div>
+  `;
+}
+
+// Auto-update preview when any input changes
+function bindPreviewListeners() {
+  const ids = ['fc','fn','fq','fworktype','ffabric','forderdate','fdu','fst','fd','fno','fdept','forderstatus','fs'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updatePreview);
+    if (el && el.tagName === 'SELECT') el.addEventListener('change', updatePreview);
+  });
+  updatePreview();
+}
+
+// ==================== PRINT ====================
+function printOrder() {
+  const preview = document.getElementById('a4-preview');
+  if (!preview) { toast('⚠️ ກວດສອບ: ຕ້ອງເປີດ ເພີ່ມລາຍການ ກ່ອນພິມ'); return; }
+
+  let frame = document.getElementById('print-frame');
+  if (!frame) {
+    frame = document.createElement('div');
+    frame.id = 'print-frame';
+    frame.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:#fff;overflow:auto;padding:20mm';
+    document.body.appendChild(frame);
+  }
+
+  // Clone A4 sheet with all styles inlined
+  const clone = preview.cloneNode(true);
+  clone.style.transform = 'none';
+  clone.style.margin = '0';
+  clone.style.boxShadow = 'none';
+  clone.style.width = '100%';
+
+  frame.innerHTML = '';
+  frame.appendChild(clone);
+  frame.style.display = 'block';
+
+  setTimeout(() => {
+    window.print();
+    frame.style.display = 'none';
+  }, 300);
+}
+// ==================== END PREVIEW/PRINT ====================
+
+initSelectors();
+// Start Firebase real-time listener
+startRealtimeListener();
+</script>
+</body>
+</html>
