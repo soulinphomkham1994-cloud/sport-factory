@@ -27,6 +27,27 @@
   --rl:       12px;
   --shadow:   0 4px 12px rgba(0,0,0,0.5);
 }
+/* ===== LIGHT MODE ===== */
+body.light-mode {
+  --bg:       #F5F5F5;
+  --bg2:      #FFFFFF;
+  --bg3:      #F0F0F0;
+  --bg4:      #E8E8E8;
+  --border:   #DDDDDD;
+  --border2:  #CCCCCC;
+  --red-dim:  #FFEBEE;
+  --red-lite: #C62828;
+  --accent:   #1976D2;
+  --text:     #1A1A1A;
+  --text2:    #444444;
+  --text3:    #888888;
+  --shadow:   0 4px 12px rgba(0,0,0,0.12);
+}
+body.light-mode .hdr { background: #fff; }
+body.light-mode .md  { background: #fff; }
+body.light-mode select, body.light-mode input[type=text],
+body.light-mode input[type=search], body.light-mode input[type=number],
+body.light-mode input[type=date] { background: #fff; color: #1A1A1A; }
 *{box-sizing:border-box;margin:0;padding:0}
 body{
   font-family:'Noto Sans Lao',sans-serif;
@@ -810,6 +831,10 @@ tbody td{padding:14px 16px;vertical-align:middle}
       <span style="font-size:20px">📷</span>
       <span class="btn-scan-label">ສແກນ QR</span>
     </button>
+    <button id="theme-btn" onclick="toggleTheme()" title="ສະຫຼັບໂໝດ" style="
+      height:40px;width:40px;border-radius:var(--r);border:1px solid var(--border);
+      background:var(--bg3);cursor:pointer;font-size:18px;display:flex;
+      align-items:center;justify-content:center;transition:all .2s;flex-shrink:0">🌙</button>
     <div class="hdr-date" id="hdrDate"></div>
   </div>
   </div>
@@ -838,6 +863,7 @@ tbody td{padding:14px 16px;vertical-align:middle}
     </div>
     <button class="btn bi" onclick="document.getElementById('imp').click()">📂 ນຳເຂົ້າ JSON</button>
     <button class="btn bx" onclick="exportData()">💾 ສົ່ງອອກ JSON</button>
+    <button class="btn" onclick="clearDailyData()" style="background:rgba(255,183,77,0.1);color:#FFB74D;border-color:rgba(255,183,77,0.3)" title="ລ້າງຂໍ້ມູນທີ່ຈັດສົ່ງສຳເລັດແລ້ວ">🗑️ ລ້າງ Done</button>
     <button class="btn bp" onclick="openModal()">➕ ເພີ່ມລາຍການໃໝ່</button>
     <input type="file" id="imp" accept=".json" class="hidden" onchange="importData(event)">
   </div>
@@ -957,9 +983,13 @@ tbody td{padding:14px 16px;vertical-align:middle}
           <div class="sr-name" id="sr-name">—</div>
         </div>
       </div>
-      <div style="margin-bottom:12px">
-        <label class="fl" style="margin-bottom:8px">ອັບເດດສະຖານະເປັນ:</label>
+      <div style="margin-bottom:10px">
+        <label class="fl" style="margin-bottom:6px">ອັບເດດສະຖານະເປັນ:</label>
         <select class="fi" id="sr-stage" style="width:100%"></select>
+      </div>
+      <div style="margin-bottom:12px">
+        <label class="fl" style="margin-bottom:6px">👤 ຊື່ພະນັກງານຮັບຜິດຊອບ:</label>
+        <input class="fi" id="sr-worker" placeholder="ກະລຸນາໃສ່ຊື່ພະນັກງານ..." style="width:100%">
       </div>
       <div style="display:flex;gap:10px">
         <button class="btn" onclick="resetScanner()" style="flex:1">🔄 ສແກນໃໝ່</button>
@@ -1927,6 +1957,18 @@ function updatePreview() {
     }</div>`;
   }
 
+  // Worker log HTML for A4
+  const currentItem = editId ? items.find(i => String(i.id) === String(editId)) : null;
+  const wLog = (currentItem && currentItem.workerLog) ? currentItem.workerLog : [];
+  const workerLogHTML = wLog.length === 0
+    ? '<div style="font-size:9px;color:#bbb;font-style:italic">ຍັງບໍ່ມີປະຫວັດ</div>'
+    : wLog.slice(-5).map(l => `
+        <div style="display:flex;gap:6px;font-size:9px;border-bottom:1px solid #f0f0f0;padding:2px 0">
+          <span style="color:#555;flex-shrink:0">${l.time||''}</span>
+          <span style="font-weight:600;color:#333;flex:1">${l.stage||''}</span>
+          <span style="color:#E53935;font-weight:700">${l.worker||''}</span>
+        </div>`).join('');
+
   preview.innerHTML = `
     <div class="a4-hdr">
       <div class="a4-logo-box">
@@ -1983,10 +2025,25 @@ function updatePreview() {
       <div class="a4-sign-box"><div class="a4-sign-line"></div><div class="a4-sign-label">QC / ກວດສອບ</div></div>
     </div>
 
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:12px">
+      <!-- Worker log -->
+      <div style="flex:1">
+        <div style="font-size:9px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;border-bottom:1px solid #ddd;padding-bottom:2px">ປະຫວັດການອັບເດດ</div>
+        ${workerLogHTML}
+      </div>
+      <!-- QR Code -->
+      <div style="text-align:center;flex-shrink:0">
+        <div style="font-size:9px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">QR ສັ່ງງານ</div>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(inv)}&margin=4&bgcolor=ffffff&color=111111"
+          style="width:90px;height:90px;border:1px solid #ddd;border-radius:3px;display:block">
+        <div style="font-size:8px;color:#888;margin-top:3px;font-family:monospace">${inv}</div>
+      </div>
+    </div>
+
     <div class="a4-footer">
       ລະບົບຕິດຕາມການຜະລິດ Sport Factory · ສ້າງອັດຕະໂນມັດ · ${printDate}
     </div>
-  `;
+  \`;
 }
 
 // Auto-update preview when any input changes
@@ -2030,6 +2087,44 @@ function printOrder() {
   }, 300);
 }
 // ==================== END PREVIEW/PRINT ====================
+
+// ==================== THEME TOGGLE ====================
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-mode');
+  document.getElementById('theme-btn').textContent = isLight ? '☀️' : '🌙';
+  localStorage.setItem('sf_theme', isLight ? 'light' : 'dark');
+}
+// Apply saved theme on load
+(function(){
+  if (localStorage.getItem('sf_theme') === 'light') {
+    document.body.classList.add('light-mode');
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = '☀️';
+  }
+})();
+// ==================== END THEME ====================
+
+// ==================== CLEAR DAILY DATA ====================
+async function clearDailyData() {
+  const doneStage = STAGES[STAGES.length - 1];
+  const doneItems = items.filter(it => it.stage === doneStage);
+  if (doneItems.length === 0) {
+    toast('ℹ️ ບໍ່ມີລາຍການ "ຈັດສົ່ງສຳເລັດ" ທີ່ຈະລ້າງ');
+    return;
+  }
+  if (!confirm(`ລ້າງລາຍການ "ຈັດສົ່ງສຳເລັດ" ທັງໝົດ ${doneItems.length} ລາຍການ?\n\n⚠️ ຂໍ້ມູນຈະຖືກລຶບຖາວອນ ບໍ່ສາມາດກູ້ຄືນໄດ້`)) return;
+  try {
+    const batch = db.batch();
+    doneItems.forEach(it => {
+      batch.delete(db.collection(COLLECTION).doc(String(it.id)));
+    });
+    await batch.commit();
+    toast(`🗑️ ລ້າງ ${doneItems.length} ລາຍການສຳເລັດ`);
+  } catch(e) {
+    toast('❌ ລ້າງບໍ່ໄດ້: ' + e.message);
+  }
+}
+// ==================== END CLEAR ====================
 
 // ==================== QR CODE DISPLAY ====================
 function showQR(id) {
@@ -2180,19 +2275,52 @@ function handleScanResult(qrData) {
   }
 }
 
+// ---- Update Google Sheets column F via Apps Script ----
+const SHEET_WEBAPP_URL = ''; // ← ໃສ່ URL Apps Script ຂອງທ່ານ (ເບິ່ງຄຳແນະນຳ)
+const SHEET_ID_WRITE = '1lPp5LuwT6lAt0wozRduI8ErarHk-5iwI5PWoZwmTZoY';
+
+async function updateSheetStatus(invCode, newStatus) {
+  if (!SHEET_WEBAPP_URL) return; // skip if not configured
+  try {
+    await fetch(SHEET_WEBAPP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inv: invCode, status: newStatus, col: 5 }) // col F = index 5
+    });
+  } catch(e) {
+    console.warn('Sheet update failed (non-critical):', e);
+  }
+}
+
 async function confirmScanUpdate() {
   if (!scannedItem) return;
   const newStage = document.getElementById('sr-stage').value;
+  const worker   = (document.getElementById('sr-worker')?.value || '').trim();
   const btn = document.querySelector('#scanner-result .btn.bp');
   btn.textContent = '⏳ ກຳລັງບັນທຶກ...';
   btn.disabled = true;
+
+  // Build worker log entry
+  const logEntry = {
+    stage: newStage,
+    worker: worker || 'ບໍ່ລະບຸ',
+    time: new Date().toLocaleString('lo-LA'),
+    ts: new Date().toISOString()
+  };
+
   try {
+    // 1) Update Firebase
+    const existing = scannedItem.workerLog || [];
     await db.collection(COLLECTION).doc(String(scannedItem.id)).update({
       stage: newStage,
       orderstatus: newStage,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      workerLog: [...existing, logEntry]
     });
-    toast(`✅ ອັບເດດ ${scannedItem.code} → "${newStage}"`);
+    // 2) Update Google Sheet col F (async, non-blocking)
+    updateSheetStatus(scannedItem.code, newStage);
+    toast(`✅ ອັບເດດ ${scannedItem.code} → "${newStage}"${worker ? ' ('+worker+')' : ''}`);
     closeScanner();
   } catch(e) {
     toast('❌ ບັນທຶກບໍ່ໄດ້: ' + e.message);
