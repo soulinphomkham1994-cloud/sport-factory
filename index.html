@@ -2102,7 +2102,7 @@ function scanFrame() {
   scannerAnimFrame = requestAnimationFrame(scanFrame);
 }
 
-function handleScanResult(qrData) {
+async function handleScanResult(qrData) {
   // qrData = INV code or full URL containing INV
   // Try to match against items by code field
   const matched = items.find(it =>
@@ -2118,13 +2118,30 @@ function handleScanResult(qrData) {
     // Show result panel
     document.getElementById('sr-inv').textContent = matched.code;
     document.getElementById('sr-name').textContent = matched.name || '—';
+    
     // Set current stage in dropdown
     const sel = document.getElementById('sr-stage');
-    sel.value = matched.stage || STAGES[0];
+    const currentIdx = STAGES.indexOf(matched.stage || STAGES[0]);
+    const nextIdx = Math.min(currentIdx + 1, STAGES.length - 1);
+    const nextStage = STAGES[nextIdx];
+    sel.value = nextStage;
+    
     document.getElementById('scanner-result').classList.remove('hidden');
     document.getElementById('scanner-body').style.display = 'none';
+    
     // vibrate on success (mobile)
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+    // --- AUTO UPDATE START ---
+    // If user wants immediate update to next stage upon scanning
+    const btn = document.querySelector('#scanner-result .btn.bp');
+    if (btn) {
+      btn.textContent = '⏳ ກຳລັງອັບເດດອັດຕະໂນມັດ...';
+      btn.disabled = true;
+      // Small delay to let user see what happened
+      setTimeout(() => confirmScanUpdate(), 800);
+    }
+    // --- AUTO UPDATE END ---
   } else {
     // Not found
     document.getElementById('sr-scanned-code').textContent = `QR: "${qrData}"`;
@@ -2138,17 +2155,23 @@ function handleScanResult(qrData) {
 // วิธีตั้งค่า: ไปที่ Google Sheet → Extensions → Apps Script → วางโค้ดด้านล่าง → Deploy → Copy URL ใส่ตรงนี้
 // Apps Script code:
 // function doGet(e){
-//   var ss=SpreadsheetApp.openById('1lPp5LuwT6lAt0wozRduI8ErarHk-5iwI5PWoZwmTZoY');
-//   var sh=ss.getSheets()[0];
-//   var inv=e.parameter.inv, status=e.parameter.status;
-//   var data=sh.getDataRange().getValues();
-//   for(var i=1;i<data.length;i++){
-//     if(String(data[i][4]).trim()===inv){ sh.getRange(i+1,6).setValue(status); break; }
+//   var ss = SpreadsheetApp.openById('1lPp5LuwT6lAt0wozRduI8ErarHk-5iwI5PWoZwmTZoY');
+//   var sh = ss.getSheets()[0];
+//   var inv = e.parameter.inv, status = e.parameter.status;
+//   var data = sh.getDataRange().getValues();
+//   var found = false;
+//   for(var i=1; i<data.length; i++){
+//     // Column E (index 4) is INV/Code, Column F (index 5) is Status
+//     if(String(data[i][4]).trim() === inv){ 
+//       sh.getRange(i+1, 6).setValue(status); 
+//       found = true;
+//       break; 
+//     }
 //   }
-//   return ContentService.createTextOutput('OK');
+//   return ContentService.createTextOutput(found ? 'OK' : 'NOT_FOUND').setMimeType(ContentService.MimeType.TEXT);
 // }
 
-const SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw2ucmsvQQ3y8cvQ-J_EmUNHKYWR-4rOap1tsC8rtJfAWYIJrKrlpFGHUIOT8fj9AEO/exec'; // ← ວາງ URL ຈາກ Apps Script Deploy ຢູ່ນີ້
+const SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbx5vOig8nHyzwsl70aWpqatRa3umPrK6isvwDouDfwx6qpgnAFdBGnAWYqspV6jo_t7/exec'; // ← กรุณาวาง URL จริงที่ได้จากการ Deploy Apps Script ที่นี่
 
 async function updateSheetStatus(invCode, newStatus) {
   if (!SHEET_WEBAPP_URL) {
