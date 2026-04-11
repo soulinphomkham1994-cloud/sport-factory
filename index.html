@@ -711,97 +711,9 @@ tbody td{padding:14px 16px;vertical-align:middle}
   #print-frame .a4-sheet { box-shadow:none;transform:none;margin:0;width:100%;min-height:100vh;padding:14mm; }
 }
 /* ===== QR SCANNER ===== */
-.btn-scan {
-  height: 40px; padding: 0 16px;
-  background: linear-gradient(135deg, #E53935, #C62828);
-  border: none; border-radius: var(--r);
-  color: #fff; font-weight: 700; font-size: 13px;
-  cursor: pointer; display: flex; align-items: center; gap: 8px;
-  box-shadow: 0 2px 8px rgba(229,57,53,0.4);
-  transition: all .2s; white-space: nowrap;
-  font-family: 'Noto Sans Lao', sans-serif;
-}
-.btn-scan:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(229,57,53,0.5); }
-.btn-scan:active { transform: translateY(0); }
-@media(max-width:500px){ .btn-scan-label { display:none; } }
 
-.scanner-modal {
-  background: var(--bg2); border-radius: var(--rl);
-  border: 1px solid var(--border);
-  width: min(420px, 96vw);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-  overflow: hidden;
-}
-.scanner-hdr {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 18px; border-bottom: 1px solid var(--border);
-  background: var(--bg3);
-}
-.scanner-body { padding: 16px; }
-
-/* Camera wrap */
-.scanner-cam-wrap {
-  position: relative; border-radius: var(--r); overflow: hidden;
-  background: #000; aspect-ratio: 1/1; max-height: 70vw;
-}
-#scanner-video {
-  width: 100%; height: 100%; object-fit: cover; display: block;
-}
-
-/* Scan frame corners */
-.scan-frame {
-  position: absolute; inset: 0;
-  display: flex; pointer-events: none;
-}
-.scan-corner {
-  position: absolute; width: 28px; height: 28px;
-  border-color: #fff; border-style: solid; border-radius: 3px;
-}
-.scan-corner.tl { top:16px; left:16px; border-width:3px 0 0 3px; }
-.scan-corner.tr { top:16px; right:16px; border-width:3px 3px 0 0; }
-.scan-corner.bl { bottom:16px; left:16px; border-width:0 0 3px 3px; }
-.scan-corner.br { bottom:16px; right:16px; border-width:0 3px 3px 0; }
-
-/* Scan line animation */
-.scan-line {
-  position: absolute; left: 16px; right: 16px; height: 2px;
-  background: linear-gradient(90deg, transparent, #E53935, #FF8A80, #E53935, transparent);
-  border-radius: 2px; box-shadow: 0 0 8px rgba(229,57,53,0.8);
-  animation: scanMove 2s ease-in-out infinite;
-  top: 16px;
-}
-@keyframes scanMove {
-  0%   { top: 16px; opacity:1; }
-  48%  { top: calc(100% - 18px); opacity:1; }
-  50%  { opacity:0.3; }
-  52%  { top: 16px; opacity:1; }
-  100% { top: 16px; opacity:1; }
-}
-
-.scan-hint {
-  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,0.65); color: #fff; font-size: 12px; font-weight: 600;
-  padding: 5px 14px; border-radius: 20px; white-space: nowrap;
-  font-family: 'Noto Sans Lao', sans-serif;
-}
-
-/* Result panels */
-.scanner-result, .scanner-notfound {
-  padding: 16px 18px 18px; border-top: 1px solid var(--border);
-}
-.scanner-notfound { text-align: center; padding: 24px; }
-.sr-found {
-  display: flex; align-items: center; gap: 12px;
-  background: rgba(77,191,138,0.1); border: 1px solid rgba(77,191,138,0.3);
-  border-radius: var(--r); padding: 10px 14px; margin-bottom: 14px;
-}
-.sr-icon { font-size: 24px; }
-.sr-inv { font-family: var(--mono); font-size: 15px; font-weight: 800; color: var(--accent); }
-.sr-name { font-size: 12px; color: var(--text2); margin-top: 2px; }
 /* ===== END QR SCANNER ===== */
 </style>
-  <!-- QR Scanner library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
   <!-- Firebase v9 CDN (compat mode) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -817,11 +729,6 @@ tbody td{padding:14px 16px;vertical-align:middle}
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
-    <button class="btn-scan" onclick="openScanner()">
-      <span style="font-size:20px">📷</span>
-      <span class="btn-scan-label">ສະແກນ QR</span>
-    </button>
-    <div style="display:flex;align-items:center;gap:10px">
     <button class="btn-scan" onclick="openScanner()" title="ສແກນ QR ອັບເດດສະຖານະ">
       <span style="font-size:20px">📷</span>
       <span class="btn-scan-label">ສແກນ QR</span>
@@ -831,7 +738,6 @@ tbody td{padding:14px 16px;vertical-align:middle}
       background:var(--bg3);cursor:pointer;font-size:18px;display:flex;
       align-items:center;justify-content:center;transition:all .2s;flex-shrink:0">🌙</button>
     <div class="hdr-date" id="hdrDate"></div>
-  </div>
   </div>
 </header>
 
@@ -2090,12 +1996,21 @@ let scannerActive = false;
 let scannedItem = null;
 
 function openScanner() {
+  // Check HTTPS (required for camera)
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+    toast('⚠️ ຕ້ອງໃຊ້ HTTPS — ເປີດຜ່ານ GitHub Pages ກ່ອນ');
+    return;
+  }
   document.getElementById('scanner-ov').classList.remove('hidden');
   // populate stage select
   const sel = document.getElementById('sr-stage');
   sel.innerHTML = STAGES.map(s => `<option value="${s}">${s}</option>`).join('');
+  // clear worker field
+  const workerEl = document.getElementById('sr-worker');
+  if (workerEl) workerEl.value = '';
   resetScanner();
-  startCamera();
+  // Small delay so modal renders before camera starts
+  setTimeout(startCamera, 150);
 }
 
 function closeScanner() {
@@ -2170,6 +2085,12 @@ function scanFrame() {
   canvas.height = video.videoHeight;
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  if (typeof jsQR === 'undefined') {
+    document.getElementById('scanner-body').innerHTML =
+      '<div style="text-align:center;padding:24px;color:var(--text2)">⏳ ກຳລັງໂຫລດ jsQR...</div>';
+    setTimeout(scanFrame, 500);
+    return;
+  }
   const code = jsQR(imageData.data, imageData.width, imageData.height, {
     inversionAttempts: 'dontInvert'
   });
@@ -2213,23 +2134,37 @@ function handleScanResult(qrData) {
   }
 }
 
-// ---- Update Google Sheets column F via Apps Script ----
-const SHEET_WEBAPP_URL = ''; // ← ໃສ່ URL Apps Script ຂອງທ່ານ (ເບິ່ງຄຳແນະນຳ)
-const SHEET_ID_WRITE = '1lPp5LuwT6lAt0wozRduI8ErarHk-5iwI5PWoZwmTZoY';
+// ==================== GOOGLE SHEET SYNC (Col F) ====================
+// วิธีตั้งค่า: ไปที่ Google Sheet → Extensions → Apps Script → วางโค้ดด้านล่าง → Deploy → Copy URL ใส่ตรงนี้
+// Apps Script code:
+// function doGet(e){
+//   var ss=SpreadsheetApp.openById('1lPp5LuwT6lAt0wozRduI8ErarHk-5iwI5PWoZwmTZoY');
+//   var sh=ss.getSheets()[0];
+//   var inv=e.parameter.inv, status=e.parameter.status;
+//   var data=sh.getDataRange().getValues();
+//   for(var i=1;i<data.length;i++){
+//     if(String(data[i][4]).trim()===inv){ sh.getRange(i+1,6).setValue(status); break; }
+//   }
+//   return ContentService.createTextOutput('OK');
+// }
+
+const SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw2ucmsvQQ3y8cvQ-J_EmUNHKYWR-4rOap1tsC8rtJfAWYIJrKrlpFGHUIOT8fj9AEO/exec'; // ← ວາງ URL ຈາກ Apps Script Deploy ຢູ່ນີ້
 
 async function updateSheetStatus(invCode, newStatus) {
-  if (!SHEET_WEBAPP_URL) return; // skip if not configured
+  if (!SHEET_WEBAPP_URL) {
+    console.info('Sheet sync: SHEET_WEBAPP_URL not set, skipping');
+    return;
+  }
   try {
-    await fetch(SHEET_WEBAPP_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inv: invCode, status: newStatus, col: 5 }) // col F = index 5
-    });
+    // GET request avoids CORS preflight issues with Apps Script
+    const url = `${SHEET_WEBAPP_URL}?inv=${encodeURIComponent(invCode)}&status=${encodeURIComponent(newStatus)}`;
+    await fetch(url, { mode: 'no-cors' });
+    console.log('Sheet updated:', invCode, '->', newStatus);
   } catch(e) {
-    console.warn('Sheet update failed (non-critical):', e);
+    console.warn('Sheet update failed (non-critical):', e.message);
   }
 }
+// ==================== END GOOGLE SHEET SYNC ====================
 
 async function confirmScanUpdate() {
   if (!scannedItem) return;
@@ -2276,5 +2211,7 @@ initSelectors();
 // Start Firebase real-time listener
 startRealtimeListener();
 </script>
+  <!-- QR Scanner library - loaded last for reliability -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 </body>
 </html>
