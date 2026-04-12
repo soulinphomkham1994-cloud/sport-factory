@@ -688,6 +688,41 @@ tbody td{padding:14px 16px;vertical-align:middle}
 }
 .player-add-btn:hover { background:rgba(66,165,245,0.12); }
 
+
+/* ===== LIGHT MODE ===== */
+body.light-mode{--bg:#F4F4F4;--bg2:#FFFFFF;--bg3:#EBEBEB;--bg4:#DCDCDC;--border:#DDDDDD;--border2:#BBBBBB;--text:#1A1A1A;--text2:#444;--text3:#888;--red-dim:#FDECEA;--red-lite:#C62828;--shadow:0 4px 12px rgba(0,0,0,0.10);}
+body.light-mode .scan-modal{background:#fff;}
+body.light-mode .scan-hint{background:rgba(0,0,0,0.55);}
+body.light-mode .scan-result-modal{background:#fff;}
+
+/* HEADER ACTION BUTTONS */
+.btn-hdr-act{height:36px;padding:0 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:"Noto Sans Lao",sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .2s;white-space:nowrap;}
+.btn-hdr-act:hover{background:var(--bg4);color:var(--text);border-color:var(--border2);}
+.btn-hdr-danger{color:#FF8A80;border-color:rgba(229,57,53,0.3);background:rgba(229,57,53,0.06);}
+.btn-hdr-danger:hover{background:rgba(229,57,53,0.15);border-color:#E53935;color:#E53935;}
+
+/* STAFF FIELD */
+.scan-staff-wrap{margin-bottom:12px;}
+.scan-staff-lbl{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:block;}
+.scan-staff-inp{width:100%;height:40px;padding:0 14px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg3);color:var(--text);font-family:"Noto Sans Lao",sans-serif;font-size:14px;outline:none;transition:border-color .2s;}
+.scan-staff-inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(66,165,245,.2);}
+
+/* CLEAR CONFIRM MODAL */
+.clear-modal{background:var(--bg2);border-radius:var(--rl);border:1px solid var(--border);padding:28px;width:min(380px,94vw);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);}
+
+/* A4 QR CODE */
+.a4-qr-wrap{position:absolute;top:10mm;right:12mm;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.a4-qr-wrap img{width:68px;height:68px;border:1.5px solid #ccc;border-radius:3px;}
+.a4-qr-wrap span{font-size:6.5px;color:#aaa;text-align:center;}
+
+/* A4 STAFF LOG */
+.a4-slog{margin-top:8px;border-top:1px solid #e0e0e0;padding-top:6px;}
+.a4-slog-title{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;}
+.a4-slog-row{display:flex;gap:8px;font-size:9px;color:#555;padding:2px 0;border-bottom:0.5px solid #eee;}
+.a4-slog-row .sl-time{min-width:90px;color:#777;}
+.a4-slog-row .sl-stage{flex:1;}
+.a4-slog-row .sl-staff{font-weight:700;color:#E53935;}
+
 /* PRINT */
 @media print {
   body > *:not(#print-frame) { display:none !important; }
@@ -800,18 +835,14 @@ tbody td{padding:14px 16px;vertical-align:middle}
       <div class="hdr-sub">ໂຮງງານເສື້ອກີລາພິມລາຍ · Sport Factory</div>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:10px">
-    <button class="btn-scan" onclick="openScanner()">
-      <span style="font-size:20px">📷</span>
-      <span class="btn-scan-label">ສະແກນ QR</span>
-    </button>
-    <div style="display:flex;align-items:center;gap:10px">
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="btn-hdr-act" id="theme-btn" onclick="toggleTheme()" title="ສະລັບໂໝດສີ">🌙</button>
+    <button class="btn-hdr-act btn-hdr-danger" onclick="confirmClearDaily()" title="ລ້າງຂໍ້ມູນປະຈຳວັນ">🗑️ ລ້າງ</button>
     <button class="btn-scan" onclick="openScanner()" title="ສແກນ QR ອັບເດດສະຖານະ">
       <span style="font-size:20px">📷</span>
       <span class="btn-scan-label">ສແກນ QR</span>
     </button>
     <div class="hdr-date" id="hdrDate"></div>
-  </div>
   </div>
 </header>
 
@@ -923,59 +954,7 @@ tbody td{padding:14px 16px;vertical-align:middle}
   </div>
 </div>
 
-<!-- QR Scanner Modal -->
-<div class="ov hidden" id="scanner-ov">
-  <div class="scanner-modal">
-    <div class="scanner-hdr">
-      <div style="font-size:16px;font-weight:800;color:var(--text)">📷 ສແກນ QR Code</div>
-      <button class="xb" onclick="closeScanner()">×</button>
-    </div>
-
-    <!-- Camera view -->
-    <div class="scanner-body" id="scanner-body">
-      <div class="scanner-cam-wrap">
-        <video id="scanner-video" autoplay playsinline muted></video>
-        <canvas id="scanner-canvas" style="display:none"></canvas>
-        <!-- Scan frame overlay -->
-        <div class="scan-frame">
-          <div class="scan-corner tl"></div>
-          <div class="scan-corner tr"></div>
-          <div class="scan-corner bl"></div>
-          <div class="scan-corner br"></div>
-          <div class="scan-line" id="scan-line"></div>
-        </div>
-        <div class="scan-hint" id="scan-hint">ຈ່ໍ QR Code ໃຫ້ຢູ່ໃນກ່ອງ</div>
-      </div>
-    </div>
-
-    <!-- Result panel (hidden until scan success) -->
-    <div class="scanner-result hidden" id="scanner-result">
-      <div class="sr-found">
-        <div class="sr-icon">✅</div>
-        <div>
-          <div class="sr-inv" id="sr-inv">—</div>
-          <div class="sr-name" id="sr-name">—</div>
-        </div>
-      </div>
-      <div style="margin-bottom:12px">
-        <label class="fl" style="margin-bottom:8px">ອັບເດດສະຖານະເປັນ:</label>
-        <select class="fi" id="sr-stage" style="width:100%"></select>
-      </div>
-      <div style="display:flex;gap:10px">
-        <button class="btn" onclick="resetScanner()" style="flex:1">🔄 ສແກນໃໝ່</button>
-        <button class="btn bp" onclick="confirmScanUpdate()" style="flex:2">💾 ບັນທຶກສະຖານະ</button>
-      </div>
-    </div>
-
-    <!-- Not found panel -->
-    <div class="scanner-notfound hidden" id="scanner-notfound">
-      <div style="font-size:32px;margin-bottom:8px">❌</div>
-      <div style="font-weight:700;color:var(--text);margin-bottom:4px">ບໍ່ພົບ Order</div>
-      <div style="font-size:12px;color:var(--text3);margin-bottom:16px" id="sr-scanned-code"></div>
-      <button class="btn bi" onclick="resetScanner()">🔄 ສແກນໃໝ່</button>
-    </div>
-  </div>
-</div>
+<!-- old scanner-ov removed -->
 
 <!-- ========== QR SCANNER MODAL ========== -->
 <div class="scan-ov hidden" id="scan-ov">
@@ -1027,9 +1006,31 @@ tbody td{padding:14px 16px;vertical-align:middle}
     </div>
     <div id="scan-result-info" class="scan-result-info"></div>
     <div class="scan-result-stages" id="scan-result-stages"></div>
+    <div style="padding:0 18px 14px">
+      <div class="scan-staff-wrap">
+        <label class="scan-staff-lbl">👤 ຊື່ພະນັກງານຮັບຜິດຊອບ</label>
+        <input class="scan-staff-inp" id="scan-staff-name" placeholder="ກະລຸນາໃສ່ຊື່ພະນັກງານ..." autocomplete="off">
+      </div>
+    </div>
     <div class="scan-result-footer">
       <button class="btn" onclick="closeScanResult()">ຍົກເລີກ</button>
       <button class="btn bp" id="scan-save-btn" onclick="saveScanStatus()">💾 ອັບເດດສະຖານະ</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLEAR DAILY CONFIRM MODAL -->
+<div class="ov hidden" id="clear-ov">
+  <div class="clear-modal">
+    <div style="font-size:40px;margin-bottom:10px">⚠️</div>
+    <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px">ລ້າງຂໍ້ມູນປະຈຳວັນ</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px">
+      ການດຳເນີນການນີ້ຈະ <b style="color:var(--red-lite)">ລຶບທຸກ Order</b> ໃນລະບົບທັງໝົດ.<br>
+      ຂໍ້ມູນ <b>ບໍ່ສາມາດກູ້ຄືນ</b>ໄດ້ — ຢືນຢັນຫຼືບໍ່?
+    </div>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button class="btn" onclick="document.getElementById('clear-ov').classList.add('hidden')" style="min-width:100px">ຍົກເລີກ</button>
+      <button class="btn bp" onclick="executeClearDaily()" style="min-width:120px">🗑️ ລ້າງຂໍ້ມູນ</button>
     </div>
   </div>
 </div>
@@ -1927,7 +1928,25 @@ function updatePreview() {
     }</div>`;
   }
 
+  // QR code from INV number
+  const qrSrc = (inv && inv !== '—')
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=136x136&data=${encodeURIComponent(inv)}&bgcolor=ffffff&color=111111&margin=5`
+    : '';
+
+  // Staff log
+  let slogHtml = '';
+  if (editId) {
+    const curIt = items.find(x => String(x.id) === String(editId));
+    const slog = (curIt && Array.isArray(curIt.staffLog)) ? curIt.staffLog : [];
+    if (slog.length > 0) {
+      slogHtml = `<div class="a4-slog"><div class="a4-slog-title">📋 ບັນທຶກການອັບເດດ</div>${
+        slog.slice(-10).map(e=>`<div class="a4-slog-row"><span class="sl-time">${e.time||''}</span><span class="sl-stage">${e.stage||''}</span><span class="sl-staff">👤 ${e.staff||'—'}</span></div>`).join('')
+      }</div>`;
+    }
+  }
+
   preview.innerHTML = `
+    <div style="position:relative">
     <div class="a4-hdr">
       <div class="a4-logo-box">
         <div class="a4-logo">SF</div>
@@ -1941,6 +1960,8 @@ function updatePreview() {
         <div class="a4-inv">${inv}</div>
         <div style="font-size:9px;color:#999;margin-top:2px">ພິມວັນທີ: ${printDate}</div>
       </div>
+    </div>
+    ${qrSrc ? `<div class="a4-qr-wrap"><img src="${qrSrc}" alt="QR"><span>ສແກນ QR<br>${inv}</span></div>` : ''}
     </div>
 
     <div class="a4-meta">
@@ -1982,6 +2003,8 @@ function updatePreview() {
       <div class="a4-sign-box"><div class="a4-sign-line"></div><div class="a4-sign-label">ຫົວໜ້າຝ່າຍຜະລິດ</div></div>
       <div class="a4-sign-box"><div class="a4-sign-line"></div><div class="a4-sign-label">QC / ກວດສອບ</div></div>
     </div>
+
+    ${slogHtml}
 
     <div class="a4-footer">
       ລະບົບຕິດຕາມການຜະລິດ Sport Factory · ສ້າງອັດຕະໂນມັດ · ${printDate}
@@ -2050,162 +2073,8 @@ document.getElementById('qr-ov').addEventListener('click', e => {
 });
 // ==================== END QR CODE DISPLAY ====================
 
-// ==================== QR SCANNER ====================
-let scannerStream = null;
-let scannerAnimFrame = null;
-let scannerActive = false;
-let scannedItem = null;
+// first-scanner-removed
 
-function openScanner() {
-  document.getElementById('scanner-ov').classList.remove('hidden');
-  // populate stage select
-  const sel = document.getElementById('sr-stage');
-  sel.innerHTML = STAGES.map(s => `<option value="${s}">${s}</option>`).join('');
-  resetScanner();
-  startCamera();
-}
-
-function closeScanner() {
-  stopCamera();
-  document.getElementById('scanner-ov').classList.add('hidden');
-  scannerActive = false;
-  scannedItem = null;
-}
-
-function resetScanner() {
-  scannedItem = null;
-  document.getElementById('scanner-result').classList.add('hidden');
-  document.getElementById('scanner-notfound').classList.add('hidden');
-  document.getElementById('scanner-body').style.display = 'block';
-  document.getElementById('scan-hint').textContent = 'ຈ່ໍ QR Code ໃຫ້ຢູ່ໃນກ່ອງ';
-  scannerActive = true;
-  // restart scan loop
-  scanFrame();
-}
-
-async function startCamera() {
-  try {
-    // Try back camera first (best for scanning on mobile)
-    const constraints = {
-      video: {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 1280 },
-        height: { ideal: 1280 }
-      }
-    };
-    scannerStream = await navigator.mediaDevices.getUserMedia(constraints);
-    const video = document.getElementById('scanner-video');
-    video.srcObject = scannerStream;
-    await video.play();
-    scannerActive = true;
-    scanFrame();
-  } catch(err) {
-    console.error('Camera error:', err);
-    document.getElementById('scanner-body').innerHTML = `
-      <div style="text-align:center;padding:32px;color:var(--text2)">
-        <div style="font-size:40px;margin-bottom:12px">📵</div>
-        <div style="font-weight:700;margin-bottom:8px">ບໍ່ສາມາດເປີດກ້ອງໄດ້</div>
-        <div style="font-size:12px;color:var(--text3)">${
-          err.name === 'NotAllowedError'
-            ? 'ກະລຸນາອະນຸຍາດໃຫ້ browser ເຂົ້າໃຊ້ກ້ອງ'
-            : 'ກ້ອງບໍ່ຮອງຮັບ ຫຼື ບໍ່ມີກ້ອງໃນອຸປະກອນ'
-        }</div>
-      </div>`;
-  }
-}
-
-function stopCamera() {
-  scannerActive = false;
-  if (scannerAnimFrame) { cancelAnimationFrame(scannerAnimFrame); scannerAnimFrame = null; }
-  if (scannerStream) {
-    scannerStream.getTracks().forEach(t => t.stop());
-    scannerStream = null;
-  }
-}
-
-function scanFrame() {
-  if (!scannerActive) return;
-  const video = document.getElementById('scanner-video');
-  const canvas = document.getElementById('scanner-canvas');
-  if (!video || !canvas) return;
-  if (video.readyState !== video.HAVE_ENOUGH_DATA) {
-    scannerAnimFrame = requestAnimationFrame(scanFrame);
-    return;
-  }
-  const ctx = canvas.getContext('2d');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const code = jsQR(imageData.data, imageData.width, imageData.height, {
-    inversionAttempts: 'dontInvert'
-  });
-  if (code && code.data) {
-    scannerActive = false;
-    handleScanResult(code.data.trim());
-    return;
-  }
-  scannerAnimFrame = requestAnimationFrame(scanFrame);
-}
-
-function handleScanResult(qrData) {
-  // qrData = INV code or full URL containing INV
-  // Try to match against items by code field
-  const matched = items.find(it =>
-    it.code && (
-      it.code === qrData ||
-      qrData.includes(it.code) ||
-      it.code.includes(qrData)
-    )
-  );
-
-  if (matched) {
-    scannedItem = matched;
-    // Show result panel
-    document.getElementById('sr-inv').textContent = matched.code;
-    document.getElementById('sr-name').textContent = matched.name || '—';
-    // Set current stage in dropdown
-    const sel = document.getElementById('sr-stage');
-    sel.value = matched.stage || STAGES[0];
-    document.getElementById('scanner-result').classList.remove('hidden');
-    document.getElementById('scanner-body').style.display = 'none';
-    // vibrate on success (mobile)
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-  } else {
-    // Not found
-    document.getElementById('sr-scanned-code').textContent = `QR: "${qrData}"`;
-    document.getElementById('scanner-notfound').classList.remove('hidden');
-    document.getElementById('scanner-body').style.display = 'none';
-    if (navigator.vibrate) navigator.vibrate(300);
-  }
-}
-
-async function confirmScanUpdate() {
-  if (!scannedItem) return;
-  const newStage = document.getElementById('sr-stage').value;
-  const btn = document.querySelector('#scanner-result .btn.bp');
-  btn.textContent = '⏳ ກຳລັງບັນທຶກ...';
-  btn.disabled = true;
-  try {
-    await db.collection(COLLECTION).doc(String(scannedItem.id)).update({
-      stage: newStage,
-      orderstatus: newStage,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    toast(`✅ ອັບເດດ ${scannedItem.code} → "${newStage}"`);
-    closeScanner();
-  } catch(e) {
-    toast('❌ ບັນທຶກບໍ່ໄດ້: ' + e.message);
-    btn.textContent = '💾 ບັນທຶກສະຖານະ';
-    btn.disabled = false;
-  }
-}
-
-// Close scanner modal when clicking backdrop
-document.getElementById('scanner-ov').addEventListener('click', e => {
-  if (e.target === document.getElementById('scanner-ov')) closeScanner();
-});
-// ==================== END QR SCANNER ====================
 
 // ==================== QR SCANNER ====================
 let _scanStream = null;
@@ -2385,16 +2254,24 @@ async function saveScanStatus() {
     toast('⚠️ ສະຖານະຍັງເໝືອນເດີມ — ເລືອກສະຖານະໃໝ່');
     return;
   }
+  const staffName = (document.getElementById('scan-staff-name')?.value || '').trim();
   const btn = document.getElementById('scan-save-btn');
   btn.disabled = true;
   btn.textContent = '⏳ ກຳລັງບັນທຶກ...';
   try {
+    const nowStr = new Date().toLocaleString('lo-LA',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const logEntry = { stage: _scanSelectedStage, staff: staffName || 'ບໍ່ລະບຸ', time: nowStr, ts: Date.now() };
+    const existingLog = Array.isArray(_scanTarget.staffLog) ? _scanTarget.staffLog : [];
+
     await db.collection(COLLECTION).doc(String(_scanTarget.id)).update({
       stage: _scanSelectedStage,
       orderstatus: _scanSelectedStage,
+      staffLog: [...existingLog, logEntry],
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    toast(`✅ ອັບເດດ ${_scanTarget.code} → "${_scanSelectedStage}"`);
+    // Sync to Google Sheet column F
+    syncSheetStatus(_scanTarget.code, _scanSelectedStage);
+    toast(`✅ ອັບເດດ ${_scanTarget.code} → "${_scanSelectedStage}"${staffName?' ໂດຍ: '+staffName:''}`);
     closeScanResult();
   } catch(e) {
     toast('❌ ບັນທຶກບໍ່ໄດ້: ' + e.message);
@@ -2402,6 +2279,80 @@ async function saveScanStatus() {
   btn.disabled = false;
   btn.textContent = '💾 ອັບເດດສະຖານະ';
 }
+
+// ==================== GOOGLE SHEET SYNC (Feature 2) ====================
+// To enable: Deploy an Apps Script Web App and paste URL below
+// Apps Script code:
+// function doPost(e){
+//   const d=JSON.parse(e.postData.contents);
+//   const sh=SpreadsheetApp.openById('1lPp5LuwT6lAt0wozRduI8ErarHk-5iwI5PWoZwmTZoY').getSheets()[0];
+//   const last=sh.getLastRow();
+//   for(let i=2;i<=last;i++){if(sh.getRange(i,5).getValue()==d.inv){sh.getRange(i,6).setValue(d.status);break;}}
+//   return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
+// }
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrixTc3Szwe6Po_jRnZI_SmUkseNPdhIVmg4aFqcJ7dzy728CQ06J6yk1tTCEN5ITl/exec'; // <-- Paste your Apps Script Web App URL here
+
+const STAGE_STATUS_MAP = {
+  'ກຳລັງດຳເນີນການ':    'ກຳລັງດຳເນີນການ',
+  'ກຳລັງວາງແພັດເທີນ':  'ກຳລັງວາງແພັດເທີນ',
+  'ກຳລັງພິມແບບ P1':     'ກຳລັງພິມແບບ P1',
+  'ກຳລັງພິມແບບ P2':     'ກຳລັງພິມແບບ P2',
+  'ກຳລັງລີດຄວາມຮ້ອນ':  'ກຳລັງລີດຄວາມຮ້ອນ',
+  'ກຳລັງຕັດຜ້າ':        'ກຳລັງຕັດຜ້າ',
+  'ກຳລັງຕັດ-ຫຍິບ':      'ກຳລັງຕັດ-ຫຍິບ',
+  'ກຳລັງລີດ-ພັບ':        'ກຳລັງລີດ-ພັບ',
+  'ກຳລັງຈັດສົ່ງ':         'ກຳລັງຈັດສົ່ງ',
+  'ຈັດສົ່ງສໍາເລັດແລ້ວ':   'ຈັດສົ່ງສຳເລັດແລ້ວ'
+};
+
+function syncSheetStatus(invCode, stage) {
+  if (!APPS_SCRIPT_URL) return;
+  const status = STAGE_STATUS_MAP[stage] || stage;
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({inv: invCode, status: status}),
+    mode: 'no-cors'
+  }).catch(e => console.warn('Sheet sync skipped:', e.message));
+}
+// ==================== END GOOGLE SHEET SYNC ====================
+
+// ==================== THEME TOGGLE (Feature 5) ====================
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-mode');
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
+  try { localStorage.setItem('sf-theme', isLight ? 'light' : 'dark'); } catch(e){}
+}
+(function applyTheme() {
+  try {
+    if (localStorage.getItem('sf-theme') === 'light') {
+      document.body.classList.add('light-mode');
+      const btn = document.getElementById('theme-btn');
+      if (btn) btn.textContent = '☀️';
+    }
+  } catch(e) {}
+})();
+// ==================== END THEME TOGGLE ====================
+
+// ==================== CLEAR DAILY DATA (Feature 4) ====================
+function confirmClearDaily() {
+  document.getElementById('clear-ov').classList.remove('hidden');
+}
+async function executeClearDaily() {
+  document.getElementById('clear-ov').classList.add('hidden');
+  toast('⏳ ກຳລັງລ້າງຂໍ້ມູນ...');
+  try {
+    const snap = await db.collection(COLLECTION).get();
+    const batch = db.batch();
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    toast('✅ ລ້າງຂໍ້ມູນທັງໝົດສຳເລັດ');
+  } catch(e) {
+    toast('❌ ລ້າງຂໍ້ມູນບໍ່ໄດ້: ' + e.message);
+  }
+}
+// ==================== END CLEAR DAILY DATA ====================
 // ==================== END QR SCANNER ====================
 
 initSelectors();
