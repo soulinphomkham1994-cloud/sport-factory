@@ -510,6 +510,49 @@ tbody td{padding:14px 16px;vertical-align:middle}
   .tbl{width: 100%;}
   .fr{grid-template-columns: 1fr;}
   .fr3{grid-template-columns: 1fr;}
+
+  /* Modal mobile fix: stack form above preview, hide preview by default */
+  .md {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    height: 100dvh;
+  }
+  .md-body {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto;
+  }
+  .md-form-panel {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+    overflow-y: visible;
+  }
+  .md-preview-panel {
+    display: none !important;
+  }
+  .md-preview-panel.mobile-visible {
+    display: flex !important;
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: #f0f0f0;
+    overflow-y: auto;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    gap: 12px;
+  }
+  .mobile-preview-close {
+    display: flex !important;
+  }
+  #preview-toggle-btn {
+    display: inline-flex !important;
+  }
+}
+@media(min-width:701px){
+  .mobile-preview-close { display: none !important; }
+  #preview-toggle-btn { display: none !important; }
 }
 /* A4 PREVIEW */
 .a4-sheet {
@@ -829,13 +872,14 @@ body.light-mode .scan-result-modal{background:#fff;}
 
 <header class="hdr">
   <div class="hdr-l">
-    <div class="logo">SF</div>
+    <div class="logo">SL</div>
     <div>
       <div class="hdr-title">ລະບົບຕິດຕາມການຜະລິດ</div>
       <div class="hdr-sub">ໂຮງງານເສື້ອກີລາພິມລາຍ · Sport Factory</div>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
+    <button class="btn-hdr-act" onclick="openAccessManager()" title="ຈັດການສິດທິ໌ພະນັກງານ" style="color:#FFB74D;border-color:rgba(255,183,77,0.3);background:rgba(255,183,77,0.06)">👥 ຈັດການສິດທິ໌</button>
     <button class="btn-hdr-act" id="theme-btn" onclick="toggleTheme()" title="ສະລັບໂໝດສີ">🌙</button>
     <button class="btn-hdr-act btn-hdr-danger" onclick="confirmClearDaily()" title="ລ້າງຂໍ້ມູນປະຈຳວັນ">🗑️ ລ້າງ</button>
     <button class="btn-scan" onclick="openScanner()" title="ສແກນ QR ອັບເດດສະຖານະ">
@@ -894,6 +938,7 @@ body.light-mode .scan-result-modal{background:#fff;}
     <div class="md-header">
       <div class="mt" id="mttl">ເພີ່ມລາຍການຜະລິດ</div>
       <div style="display:flex;gap:8px;align-items:center">
+        <button id="preview-toggle-btn" class="btn bi" onclick="toggleMobilePreview()" style="height:36px;font-size:12px;display:none">📄 Preview</button>
         <button class="btn bx" onclick="printOrder()" style="height:36px;font-size:13px">🖨️ ພິມໃບກຳກັບ</button>
         <button class="xb" onclick="closeModal()">×</button>
       </div>
@@ -928,9 +973,10 @@ body.light-mode .scan-result-modal{background:#fff;}
       </div><!-- end md-form-panel -->
 
       <!-- A4 PREVIEW PANEL -->
-      <div class="md-preview-panel">
-        <div style="font-size:11px;font-weight:700;color:#555;letter-spacing:.1em;text-transform:uppercase;align-self:flex-start">
-          📄 Preview ໃບກຳກັບການຜະລິດ
+      <div class="md-preview-panel" id="md-preview-panel">
+        <div style="font-size:11px;font-weight:700;color:#555;letter-spacing:.1em;text-transform:uppercase;align-self:flex-start;display:flex;align-items:center;justify-content:space-between;width:100%">
+          <span>📄 Preview ໃບກຳກັບການຜະລິດ</span>
+          <button class="mobile-preview-close xb" onclick="toggleMobilePreview()" style="display:none;color:#555;font-size:20px">×</button>
         </div>
         <div id="a4-preview" class="a4-sheet">
           <!-- filled by updatePreview() -->
@@ -2356,6 +2402,280 @@ async function executeClearDaily() {
 }
 // ==================== END CLEAR DAILY DATA ====================
 // ==================== END QR SCANNER ====================
+
+// ==================== MOBILE PREVIEW TOGGLE ====================
+function toggleMobilePreview() {
+  const panel = document.getElementById('md-preview-panel');
+  if (!panel) return;
+  panel.classList.toggle('mobile-visible');
+}
+// ==================== END MOBILE PREVIEW TOGGLE ====================
+
+// ==================== ACCESS CONTROL (Staff Permission) ====================
+// Staff registry stored in Firestore collection: 'staff_access'
+// Each doc: { name, pin (hashed), role, active, createdAt, grantedBy }
+const STAFF_COLLECTION = 'staff_access';
+const ADMIN_PIN = '1234'; // Change this — admin PIN to manage staff
+
+let _currentStaff = null; // logged-in staff info
+
+// Simple hash (not cryptographic, but better than plaintext)
+async function hashPin(pin) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('sl-factory-' + pin));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ---- CSS for access control modals (injected once) ----
+(function injectAccessCSS(){
+  const s = document.createElement('style');
+  s.textContent = `
+  .ac-ov{position:fixed;inset:0;background:rgba(0,0,0,0.92);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:500}
+  .ac-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:28px;width:min(440px,96vw);box-shadow:0 20px 60px rgba(0,0,0,0.7)}
+  .ac-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px}
+  .ac-sub{font-size:12px;color:var(--text3);margin-bottom:20px}
+  .ac-field{margin-bottom:14px}
+  .ac-label{display:block;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px}
+  .ac-input{width:100%;height:44px;padding:0 14px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg3);color:var(--text);font-family:'Noto Sans Lao',sans-serif;font-size:15px;outline:none;transition:border-color .2s;letter-spacing:2px}
+  .ac-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(66,165,245,.2)}
+  .ac-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+  .ac-err{color:var(--red-lite);font-size:12px;margin-top:6px;min-height:18px;font-weight:600}
+  .ac-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700}
+  .ac-badge-on{background:rgba(77,191,138,0.15);color:#4DBF8A;border:1px solid rgba(77,191,138,0.3)}
+  .ac-badge-off{background:var(--red-dim);color:var(--red-lite);border:1px solid var(--red-dark)}
+  .ac-badge-admin{background:rgba(255,183,77,0.15);color:#FFB74D;border:1px solid rgba(255,183,77,0.3)}
+  .staff-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border);margin-bottom:8px;transition:border-color .15s}
+  .staff-row:hover{border-color:var(--border2)}
+  .staff-info{flex:1}
+  .staff-name{font-weight:700;font-size:13px;color:var(--text)}
+  .staff-meta{font-size:11px;color:var(--text3);margin-top:2px}
+  .staff-actions{display:flex;gap:6px}
+  #ac-mgr-panel{overflow-y:auto;max-height:55vh;padding-right:4px}
+  `;
+  document.head.appendChild(s);
+})();
+
+// ---- Open Access Manager (admin only) ----
+function openAccessManager() {
+  // Verify admin PIN first
+  showAdminPinPrompt(() => renderAccessManager());
+}
+
+function showAdminPinPrompt(onSuccess) {
+  const ov = document.createElement('div');
+  ov.className = 'ac-ov';
+  ov.id = 'ac-pin-ov';
+  ov.innerHTML = `
+    <div class="ac-box">
+      <div class="ac-title">🔐 ຈັດການສິດທິ໌ການເຂົ້າເຖິງ</div>
+      <div class="ac-sub">ໃສ່ PIN ຜູ້ດູແລລະບົບ (Admin)</div>
+      <div class="ac-field">
+        <label class="ac-label">Admin PIN</label>
+        <input class="ac-input" id="ac-admin-pin" type="password" maxlength="12" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter')verifyAdminPin()">
+        <div class="ac-err" id="ac-pin-err"></div>
+      </div>
+      <div class="ac-btns">
+        <button class="btn" onclick="document.getElementById('ac-pin-ov').remove()">ຍົກເລີກ</button>
+        <button class="btn bp" onclick="verifyAdminPin()">🔓 ເຂົ້າ</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  setTimeout(() => document.getElementById('ac-admin-pin')?.focus(), 100);
+  window._acAdminCallback = onSuccess;
+}
+
+async function verifyAdminPin() {
+  const pin = document.getElementById('ac-admin-pin')?.value?.trim();
+  const err = document.getElementById('ac-pin-err');
+  if (!pin) { if(err) err.textContent = 'ກະລຸນາໃສ່ PIN'; return; }
+  const h = await hashPin(pin);
+  const adminHash = await hashPin(ADMIN_PIN);
+  if (h !== adminHash) { if(err) err.textContent = '❌ PIN ບໍ່ຖືກ'; return; }
+  document.getElementById('ac-pin-ov')?.remove();
+  if (window._acAdminCallback) window._acAdminCallback();
+}
+
+async function renderAccessManager() {
+  const ov = document.createElement('div');
+  ov.className = 'ac-ov';
+  ov.id = 'ac-mgr-ov';
+  ov.innerHTML = `
+    <div class="ac-box" style="width:min(560px,97vw)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div class="ac-title">👥 ຈັດການສິດທິ໌ພະນັກງານ</div>
+        <button class="xb" onclick="document.getElementById('ac-mgr-ov').remove()">×</button>
+      </div>
+      <div class="ac-sub">ເພີ່ມ / ລຶບ / ປິດ-ເປີດ ການເຂົ້າໃຊ້ງານຂອງພະນັກງານ</div>
+
+      <!-- Add new staff -->
+      <div style="background:rgba(66,165,245,0.06);border:1px solid rgba(66,165,245,0.2);border-radius:var(--r);padding:14px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">➕ ເພີ່ມພະນັກງານໃໝ່</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="ac-field" style="margin:0">
+            <label class="ac-label">ຊື່ພະນັກງານ *</label>
+            <input class="ac-input" id="new-staff-name" placeholder="ຊື່ ນາມສະກຸນ" style="letter-spacing:0;height:40px">
+          </div>
+          <div class="ac-field" style="margin:0">
+            <label class="ac-label">PIN (4-8 ຕົວເລກ) *</label>
+            <input class="ac-input" id="new-staff-pin" type="password" maxlength="8" placeholder="••••" style="height:40px">
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <select class="fi" id="new-staff-role" style="height:40px;flex:1">
+            <option value="staff">ພະນັກງານທົ່ວໄປ (ສະແກນ + ເບິ່ງ)</option>
+            <option value="editor">ບັນນາທິການ (ແກ້ໄຂໄດ້)</option>
+            <option value="admin">ຜູ້ດູແລ (ທຸກສິດທິ໌)</option>
+          </select>
+          <button class="btn bp" onclick="addNewStaff()" style="height:40px;flex-shrink:0">➕ ເພີ່ມ</button>
+        </div>
+        <div class="ac-err" id="new-staff-err"></div>
+      </div>
+
+      <!-- Staff list -->
+      <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">📋 ລາຍຊື່ພະນັກງານ</div>
+      <div id="ac-mgr-panel">
+        <div style="text-align:center;padding:20px;color:var(--text3)">⏳ ກຳລັງໂຫລດ...</div>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  await loadStaffList();
+}
+
+async function loadStaffList() {
+  const panel = document.getElementById('ac-mgr-panel');
+  if (!panel) return;
+  try {
+    const snap = await db.collection(STAFF_COLLECTION).orderBy('createdAt','desc').get();
+    if (snap.empty) {
+      panel.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3)">ຍັງບໍ່ມີພະນັກງານ — ເພີ່ມຄົນທຳອິດ</div>`;
+      return;
+    }
+    const roleLabel = { staff:'ທົ່ວໄປ', editor:'ບັນນາທິການ', admin:'ຜູ້ດູແລ' };
+    const roleColor = { staff:'var(--text2)', editor:'#42A5F5', admin:'#FFB74D' };
+    panel.innerHTML = snap.docs.map(doc => {
+      const d = doc.data();
+      const active = d.active !== false;
+      const role = d.role || 'staff';
+      return `<div class="staff-row">
+        <div style="font-size:22px">${active ? '🟢' : '🔴'}</div>
+        <div class="staff-info">
+          <div class="staff-name">${d.name || '—'}</div>
+          <div class="staff-meta">
+            <span style="color:${roleColor[role]};font-weight:700">${roleLabel[role]||role}</span>
+            · ${d.grantedBy ? 'ຮັບສິດໂດຍ: '+d.grantedBy : ''}
+            · ${d.createdAt ? new Date(d.createdAt.toDate()).toLocaleDateString('lo-LA') : ''}
+          </div>
+        </div>
+        <div class="staff-actions">
+          <button class="btn" onclick="toggleStaffAccess('${doc.id}',${active})" style="height:32px;font-size:12px;padding:0 10px">${active ? '⛔ ປິດ' : '✅ ເປີດ'}</button>
+          <button class="btn ab-del" onclick="deleteStaff('${doc.id}','${d.name}')" style="height:32px;font-size:12px;padding:0 10px;color:var(--red-lite);border-color:rgba(229,57,53,.3)">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    panel.innerHTML = `<div class="ac-err">❌ ${e.message}</div>`;
+  }
+}
+
+async function addNewStaff() {
+  const name = (document.getElementById('new-staff-name')?.value || '').trim();
+  const pin  = (document.getElementById('new-staff-pin')?.value  || '').trim();
+  const role = document.getElementById('new-staff-role')?.value || 'staff';
+  const err  = document.getElementById('new-staff-err');
+
+  if (!name) { if(err) err.textContent = '⚠️ ໃສ່ຊື່ພະນັກງານ'; return; }
+  if (!pin || pin.length < 4) { if(err) err.textContent = '⚠️ PIN ຕ້ອງມີຢ່າງໜ້ອຍ 4 ຕົວ'; return; }
+  if (!/^\d+$/.test(pin)) { if(err) err.textContent = '⚠️ PIN ຕ້ອງເປັນຕົວເລກເທົ່ານັ້ນ'; return; }
+  if(err) err.textContent = '';
+
+  try {
+    const pinHash = await hashPin(pin);
+    await db.collection(STAFF_COLLECTION).add({
+      name,
+      pinHash,
+      role,
+      active: true,
+      grantedBy: 'Admin',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('new-staff-name').value = '';
+    document.getElementById('new-staff-pin').value = '';
+    toast(`✅ ເພີ່ມ "${name}" ສຳເລັດ`);
+    await loadStaffList();
+  } catch(e) {
+    if(err) err.textContent = '❌ ' + e.message;
+  }
+}
+
+async function toggleStaffAccess(docId, currentlyActive) {
+  try {
+    await db.collection(STAFF_COLLECTION).doc(docId).update({ active: !currentlyActive });
+    toast(currentlyActive ? '⛔ ປິດການເຂົ້າໃຊ້ງານແລ້ວ' : '✅ ເປີດການເຂົ້າໃຊ້ງານແລ້ວ');
+    await loadStaffList();
+  } catch(e) { toast('❌ ' + e.message); }
+}
+
+async function deleteStaff(docId, name) {
+  if (!confirm(`ຢືນຢັນການລຶບ "${name}" ອອກຈາກລະບົບ?`)) return;
+  try {
+    await db.collection(STAFF_COLLECTION).doc(docId).delete();
+    toast(`🗑️ ລຶບ "${name}" ສຳເລັດ`);
+    await loadStaffList();
+  } catch(e) { toast('❌ ' + e.message); }
+}
+
+// ---- Staff Login (verify PIN) ----
+function openStaffLogin(onSuccess) {
+  const ov = document.createElement('div');
+  ov.className = 'ac-ov';
+  ov.id = 'staff-login-ov';
+  ov.innerHTML = `
+    <div class="ac-box">
+      <div class="ac-title">👤 ເຂົ້າໃຊ້ງານ</div>
+      <div class="ac-sub">ໃສ່ຊື່ ແລະ PIN ຂອງທ່ານ</div>
+      <div class="ac-field">
+        <label class="ac-label">ຊື່ພະນັກງານ</label>
+        <input class="ac-input" id="sl-name" placeholder="ຊື່ຂອງທ່ານ..." style="letter-spacing:0;height:42px" autocomplete="off">
+      </div>
+      <div class="ac-field">
+        <label class="ac-label">PIN</label>
+        <input class="ac-input" id="sl-pin" type="password" maxlength="8" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter')doStaffLogin()">
+        <div class="ac-err" id="sl-err"></div>
+      </div>
+      <div class="ac-btns">
+        <button class="btn" onclick="document.getElementById('staff-login-ov').remove()">ຍົກເລີກ</button>
+        <button class="btn bp" onclick="doStaffLogin()">🔓 ເຂົ້າລະບົບ</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  window._staffLoginCallback = onSuccess;
+  setTimeout(() => document.getElementById('sl-name')?.focus(), 100);
+}
+
+async function doStaffLogin() {
+  const name = (document.getElementById('sl-name')?.value || '').trim();
+  const pin  = (document.getElementById('sl-pin')?.value  || '').trim();
+  const err  = document.getElementById('sl-err');
+  if (!name || !pin) { if(err) err.textContent = '⚠️ ໃສ່ຊື່ ແລະ PIN'; return; }
+  const pinHash = await hashPin(pin);
+  try {
+    const snap = await db.collection(STAFF_COLLECTION).where('pinHash','==',pinHash).get();
+    const match = snap.docs.find(d => {
+      const data = d.data();
+      return data.name === name && data.active !== false;
+    });
+    if (!match) {
+      if(err) err.textContent = '❌ ຊື່ ຫຼື PIN ບໍ່ຖືກ / ບັນຊີຖືກປິດ';
+      return;
+    }
+    _currentStaff = { id: match.id, ...match.data() };
+    document.getElementById('staff-login-ov')?.remove();
+    toast(`✅ ຍິນດີຕ້ອນຮັບ ${_currentStaff.name}`);
+    if (window._staffLoginCallback) window._staffLoginCallback(_currentStaff);
+  } catch(e) {
+    if(err) err.textContent = '❌ ' + e.message;
+  }
+}
+// ==================== END ACCESS CONTROL ====================
 
 initSelectors();
 // Start Firebase real-time listener
