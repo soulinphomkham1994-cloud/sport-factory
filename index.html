@@ -766,7 +766,55 @@ body.light-mode .scan-result-modal{background:#fff;}
 .a4-slog-row .sl-stage{flex:1;}
 .a4-slog-row .sl-staff{font-weight:700;color:#E53935;}
 
-/* PRINT */
+/* ===== LOGIN GATE ===== */
+#login-gate {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+}
+.login-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--rl); padding: 36px 32px;
+  width: min(420px, 96vw);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+  display: flex; flex-direction: column; align-items: center;
+}
+.login-logo {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--red), var(--red-dark));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 800; color: #fff;
+  box-shadow: 0 4px 16px rgba(229,57,53,0.4);
+  margin-bottom: 16px;
+}
+.login-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.login-sub { font-size: 12px; color: var(--text3); margin-bottom: 28px; text-align: center; }
+.login-field { width: 100%; margin-bottom: 14px; }
+.login-label { display: block; font-size: 11px; font-weight: 700; color: var(--text3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 6px; }
+.login-input {
+  width: 100%; height: 46px; padding: 0 16px;
+  border: 1px solid var(--border2); border-radius: var(--r);
+  background: var(--bg3); color: var(--text);
+  font-family: 'Noto Sans Lao', sans-serif; font-size: 15px;
+  outline: none; transition: border-color .2s;
+}
+.login-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(66,165,245,.2); }
+.login-pin { letter-spacing: 6px; font-size: 18px; text-align: center; }
+.login-err { color: var(--red-lite); font-size: 12px; font-weight: 600; min-height: 20px; margin-bottom: 8px; text-align: center; }
+.login-btn {
+  width: 100%; height: 48px; border-radius: var(--r);
+  background: var(--red); border: none; color: #fff;
+  font-family: 'Noto Sans Lao', sans-serif; font-size: 16px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+  box-shadow: 0 4px 14px rgba(229,57,53,0.35);
+}
+.login-btn:hover { background: var(--red-dark); transform: translateY(-1px); }
+.login-btn:active { transform: translateY(0); }
+.login-divider { width: 100%; border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+.login-admin-link { font-size: 11px; color: var(--text3); cursor: pointer; transition: color .2s; }
+.login-admin-link:hover { color: var(--accent); }
+.login-spinner { font-size: 13px; color: var(--text3); margin-top: 10px; }
+/* ===== END LOGIN GATE ===== */
 @media print {
   body > *:not(#print-frame) { display:none !important; }
   #print-frame { display:block !important; position:fixed;inset:0;z-index:9999;background:#fff; }
@@ -870,7 +918,33 @@ body.light-mode .scan-result-modal{background:#fff;}
 </head>
 <body>
 
-<header class="hdr">
+<!-- ===== LOGIN GATE ===== -->
+<div id="login-gate">
+  <div class="login-card">
+    <div class="login-logo">SL</div>
+    <div class="login-title">ລະບົບຕິດຕາມການຜະລິດ</div>
+    <div class="login-sub">ໂຮງງານເສື້ອກີລາພິມລາຍ · Sport Factory<br>ກະລຸນາເຂົ້າສູ່ລະບົບກ່ອນໃຊ້ງານ</div>
+
+    <div class="login-field">
+      <label class="login-label">👤 ຊື່ພະນັກງານ</label>
+      <input class="login-input" id="gate-name" placeholder="ຊື່ຂອງທ່ານ..." autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('gate-pin').focus()">
+    </div>
+    <div class="login-field">
+      <label class="login-label">🔑 PIN</label>
+      <input class="login-input login-pin" id="gate-pin" type="password" maxlength="8" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter')doGateLogin()">
+    </div>
+    <div class="login-err" id="gate-err"></div>
+    <button class="login-btn" onclick="doGateLogin()">🔓 ເຂົ້າໃຊ້ງານ</button>
+
+    <hr class="login-divider">
+    <span class="login-admin-link" onclick="doAdminBypass()">🔧 ຜູ້ດູແລລະບົບ (Admin)</span>
+    <div class="login-spinner hidden" id="gate-spinner">⏳ ກຳລັງກວດສອບ...</div>
+  </div>
+</div>
+<!-- ===== END LOGIN GATE ===== -->
+
+<!-- APP CONTENT (hidden until login) -->
+<div id="app-content" style="display:none">
   <div class="hdr-l">
     <div class="logo">SL</div>
     <div>
@@ -1083,7 +1157,7 @@ body.light-mode .scan-result-modal{background:#fff;}
 
 <div class="toast" id="toast"></div>
 
-<script>
+</div><!-- end #app-content -->
 const STAGES=[
   '1.1.1.ກໍາລັງດໍາເນີນການ',
   '1.1.2. ກໍາລັງວາງແພັດເທີນ',
@@ -2415,7 +2489,7 @@ function toggleMobilePreview() {
 // Staff registry stored in Firestore collection: 'staff_access'
 // Each doc: { name, pin (hashed), role, active, createdAt, grantedBy }
 const STAFF_COLLECTION = 'staff_access';
-const ADMIN_PIN = '1234'; // Change this — admin PIN to manage staff
+const ADMIN_PIN = '57519669'; // Change this — admin PIN to manage staff
 
 let _currentStaff = null; // logged-in staff info
 
@@ -2677,9 +2751,127 @@ async function doStaffLogin() {
 }
 // ==================== END ACCESS CONTROL ====================
 
-initSelectors();
-// Start Firebase real-time listener
-startRealtimeListener();
+// ==================== LOGIN GATE BOOT ====================
+// Session key so login persists on refresh (same browser tab session)
+const SESSION_KEY = 'sl_staff_session';
+
+function saveSession(staff) {
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ name: staff.name, role: staff.role, id: staff.id })); } catch(e){}
+}
+function loadSession() {
+  try { const s = sessionStorage.getItem(SESSION_KEY); return s ? JSON.parse(s) : null; } catch(e){ return null; }
+}
+function clearSession() {
+  try { sessionStorage.removeItem(SESSION_KEY); } catch(e){}
+}
+
+function unlockApp(staffInfo) {
+  _currentStaff = staffInfo;
+  document.getElementById('login-gate').style.display = 'none';
+  document.getElementById('app-content').style.display = 'block';
+
+  // Show who is logged in + logout button in header
+  const hdrRight = document.querySelector('.hdr > div:last-child') || document.querySelector('.hdr');
+  if (hdrRight) {
+    const tag = document.createElement('div');
+    tag.id = 'staff-tag';
+    tag.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    tag.innerHTML = `
+      <span style="font-size:12px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);padding:4px 10px;border-radius:var(--r)">
+        👤 <b style="color:var(--text)">${staffInfo.name}</b>
+        <span style="color:var(--text3);font-size:10px;margin-left:4px">${{staff:'ທົ່ວໄປ',editor:'ບັນນາທິການ',admin:'ຜູ້ດູແລ'}[staffInfo.role]||''}</span>
+      </span>
+      <button class="btn-hdr-act" onclick="logoutStaff()" style="color:#FF8A80;border-color:rgba(229,57,53,.3);background:rgba(229,57,53,.06)">🚪 ອອກ</button>`;
+    hdrRight.insertBefore(tag, hdrRight.firstChild);
+  }
+
+  // Hide staff manager button if not admin
+  if (staffInfo.role !== 'admin') {
+    const mgrBtn = document.querySelector('[onclick="openAccessManager()"]');
+    if (mgrBtn) mgrBtn.style.display = 'none';
+  }
+
+  initSelectors();
+  startRealtimeListener();
+}
+
+function logoutStaff() {
+  if (!confirm('ຢືນຢັນການອອກຈາກລະບົບ?')) return;
+  clearSession();
+  location.reload();
+}
+
+async function doGateLogin() {
+  const name = (document.getElementById('gate-name')?.value || '').trim();
+  const pin  = (document.getElementById('gate-pin')?.value  || '').trim();
+  const err  = document.getElementById('gate-err');
+  const spinner = document.getElementById('gate-spinner');
+
+  if (!name || !pin) { err.textContent = '⚠️ ໃສ່ຊື່ ແລະ PIN ກ່ອນ'; return; }
+  err.textContent = '';
+  spinner.classList.remove('hidden');
+
+  try {
+    const pinHash = await hashPin(pin);
+    const snap = await db.collection(STAFF_COLLECTION).where('pinHash','==',pinHash).get();
+    spinner.classList.add('hidden');
+
+    const match = snap.docs.find(d => {
+      const data = d.data();
+      return data.name === name && data.active !== false;
+    });
+
+    if (!match) {
+      err.textContent = '❌ ຊື່ ຫຼື PIN ບໍ່ຖືກ / ຫຼືບັນຊີຖືກປິດໃຊ້ງານ';
+      document.getElementById('gate-pin').value = '';
+      return;
+    }
+
+    const staffInfo = { id: match.id, ...match.data() };
+    saveSession(staffInfo);
+    unlockApp(staffInfo);
+  } catch(e) {
+    spinner.classList.add('hidden');
+    // If staff collection empty — allow first-time admin bypass
+    if (e.code === 'failed-precondition' || e.message.includes('index')) {
+      err.textContent = '⚠️ ຍັງບໍ່ມີໃນ DB — ໃຊ້ Admin bypass';
+    } else {
+      err.textContent = '❌ ' + e.message;
+    }
+  }
+}
+
+async function doAdminBypass() {
+  const pin = prompt('ໃສ່ Admin PIN:');
+  if (!pin) return;
+  const h = await hashPin(pin.trim());
+  const adminHash = await hashPin(ADMIN_PIN);
+  if (h !== adminHash) { alert('❌ PIN ບໍ່ຖືກ'); return; }
+  const adminInfo = { id: 'admin', name: 'Admin', role: 'admin', active: true };
+  saveSession(adminInfo);
+  unlockApp(adminInfo);
+}
+
+// ---- Boot: check session first, else show gate ----
+(function boot() {
+  // Firebase must be ready — check session after a tick
+  const session = loadSession();
+  if (session) {
+    // Validate session still active (non-blocking — optimistic unlock)
+    unlockApp(session);
+    // Background check: still active in Firestore
+    if (session.id && session.id !== 'admin') {
+      db.collection(STAFF_COLLECTION).doc(session.id).get().then(doc => {
+        if (!doc.exists || doc.data().active === false) {
+          toast('⛔ ບັນຊີຂອງທ່ານຖືກປິດ — ກະລຸນາຕິດຕໍ່ Admin');
+          setTimeout(() => { clearSession(); location.reload(); }, 2500);
+        }
+      }).catch(()=>{});
+    }
+  }
+  // else: login gate stays visible (default)
+})();
+// ==================== END LOGIN GATE BOOT ====================
 </script>
 </body>
 </html>
