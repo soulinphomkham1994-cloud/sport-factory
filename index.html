@@ -2489,14 +2489,26 @@ function toggleMobilePreview() {
 // Staff registry stored in Firestore collection: 'staff_access'
 // Each doc: { name, pin (hashed), role, active, createdAt, grantedBy }
 const STAFF_COLLECTION = 'staff_access';
-const ADMIN_PIN = '57519669'; // Change this — admin PIN to manage staff
+const ADMIN_PIN = '1234'; // Change this — admin PIN to manage staff
 
 let _currentStaff = null; // logged-in staff info
 
-// Simple hash (not cryptographic, but better than plaintext)
+// Hash PIN — tries Web Crypto (HTTPS) then falls back to simple hash (HTTP / file://)
 async function hashPin(pin) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('sl-factory-' + pin));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  const input = 'sl-factory-' + pin;
+  try {
+    if (window.crypto && window.crypto.subtle) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+  } catch(e) { /* fall through to simple hash */ }
+  // Fallback: djb2-style hash — works on http:// and file://
+  let h = 5381;
+  for (let i = 0; i < input.length; i++) {
+    h = ((h << 5) + h) ^ input.charCodeAt(i);
+    h = h >>> 0;
+  }
+  return 'fb_' + h.toString(16).padStart(8, '0');
 }
 
 // ---- CSS for access control modals (injected once) ----
@@ -2802,51 +2814,114 @@ function logoutStaff() {
 }
 
 async function doGateLogin() {
-  const name = (document.getElementById('gate-name')?.value || '').trim();
-  const pin  = (document.getElementById('gate-pin')?.value  || '').trim();
-  const err  = document.getElementById('gate-err');
+  const nameEl = document.getElementById('gate-name');
+  const pinEl  = document.getElementById('gate-pin');
+  const err    = document.getElementById('gate-err');
   const spinner = document.getElementById('gate-spinner');
+  const btn    = document.querySelector('.login-btn');
+
+  const name = (nameEl?.value || '').trim();
+  const pin  = (pinEl?.value  || '').trim();
 
   if (!name || !pin) { err.textContent = '⚠️ ໃສ່ຊື່ ແລະ PIN ກ່ອນ'; return; }
+
   err.textContent = '';
   spinner.classList.remove('hidden');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ ກຳລັງກວດສອບ...'; }
+
+  const reset = (msg) => {
+    spinner.classList.add('hidden');
+    if (btn) { btn.disabled = false; btn.innerHTML = '🔓 ເຂົ້າໃຊ້ງານ'; }
+    if (pinEl) pinEl.value = '';
+    err.style.cssText = 'color:#FF8A80;font-size:13px;font-weight:700;background:rgba(229,57,53,0.1);border:1px solid rgba(229,57,53,0.3);border-radius:6px;padding:8px 12px;margin-bottom:8px;text-align:center;min-height:0';
+    err.textContent = msg;
+  };
 
   try {
     const pinHash = await hashPin(pin);
-    const snap = await db.collection(STAFF_COLLECTION).where('pinHash','==',pinHash).get();
-    spinner.classList.add('hidden');
 
+    // Timeout wrapper — 8 seconds
+    const snap = await Promise.race([
+      db.collection(STAFF_COLLECTION).get(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('ໂຕເລກໝົດເວລາ — ກວດສອບ Internet')), 8000))
+    ]);
+
+    spinner.classList.add('hidden');
+    if (btn) { btn.disabled = false; btn.innerHTML = '🔓 ເຂົ້າໃຊ້ງານ'; }
+
+    if (snap.empty) {
+      reset('⚠️ ຍັງບໍ່ມີຂໍ້ມູນພະນັກງານ — ໃຊ້ Admin bypass ກ່ອນ');
+      return;
+    }
+
+    // Case-insensitive name match + pin hash match
     const match = snap.docs.find(d => {
       const data = d.data();
-      return data.name === name && data.active !== false;
+      return data.pinHash === pinHash
+        && data.name.trim().toLowerCase() === name.toLowerCase()
+        && data.active !== false;
     });
 
     if (!match) {
-      err.textContent = '❌ ຊື່ ຫຼື PIN ບໍ່ຖືກ / ຫຼືບັນຊີຖືກປິດໃຊ້ງານ';
-      document.getElementById('gate-pin').value = '';
+      // Check if name exists but PIN wrong, or account disabled
+      const nameOnly = snap.docs.find(d => d.data().name.trim().toLowerCase() === name.toLowerCase());
+      if (nameOnly && nameOnly.data().active === false) {
+        reset('⛔ ບັນຊີຂອງທ່ານຖືກປິດໃຊ້ງານ — ຕິດຕໍ່ Admin');
+      } else {
+        reset('❌ ຊື່ ຫຼື PIN ບໍ່ຖືກ — ກວດສອບອີກຄັ້ງ');
+      }
       return;
     }
 
     const staffInfo = { id: match.id, ...match.data() };
     saveSession(staffInfo);
     unlockApp(staffInfo);
+
   } catch(e) {
-    spinner.classList.add('hidden');
-    // If staff collection empty — allow first-time admin bypass
-    if (e.code === 'failed-precondition' || e.message.includes('index')) {
-      err.textContent = '⚠️ ຍັງບໍ່ມີໃນ DB — ໃຊ້ Admin bypass';
+    console.error('Login error:', e);
+    if (e.code === 'permission-denied') {
+      reset('❌ Firestore Rules ບໍ່ອະນຸຍາດ — ໃຫ້ Admin ຕັ້ງ Rules ກ່ອນ');
     } else {
-      err.textContent = '❌ ' + e.message;
+      reset('❌ ' + (e.message || 'ເກີດຂໍ້ຜິດພາດ — ລອງໃໝ່'));
     }
   }
 }
 
-async function doAdminBypass() {
-  const pin = prompt('ໃສ່ Admin PIN:');
-  if (!pin) return;
-  const h = await hashPin(pin.trim());
+function doAdminBypass() {
+  // Show inline admin PIN dialog (prompt() blocked in some browsers)
+  const existing = document.getElementById('admin-bypass-box');
+  if (existing) { existing.remove(); return; }
+
+  const box = document.createElement('div');
+  box.id = 'admin-bypass-box';
+  box.style.cssText = 'margin-top:14px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:14px;width:100%';
+  box.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">🔧 Admin PIN</div>
+    <div style="display:flex;gap:8px">
+      <input id="admin-pin-inp" type="password" maxlength="12" placeholder="ໃສ່ Admin PIN..."
+        style="flex:1;height:40px;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:15px;letter-spacing:4px;outline:none"
+        onkeydown="if(event.key==='Enter')confirmAdminBypass()">
+      <button class="btn bp" onclick="confirmAdminBypass()" style="height:40px;padding:0 14px;flex-shrink:0">ເຂົ້າ</button>
+    </div>
+    <div id="admin-bypass-err" style="color:#FF8A80;font-size:12px;margin-top:6px;min-height:16px"></div>`;
+
+  const card = document.querySelector('.login-card');
+  if (card) card.appendChild(box);
+  setTimeout(() => document.getElementById('admin-pin-inp')?.focus(), 50);
+}
+
+async function confirmAdminBypass() {
+  const pin = (document.getElementById('admin-pin-inp')?.value || '').trim();
+  const err = document.getElementById('admin-bypass-err');
+  if (!pin) { if(err) err.textContent = '⚠️ ໃສ່ PIN'; return; }
+
+  const h = await hashPin(pin);
   const adminHash = await hashPin(ADMIN_PIN);
-  if (h !== adminHash) { alert('❌ PIN ບໍ່ຖືກ'); return; }
+  if (h !== adminHash) {
+    if(err) err.textContent = '❌ PIN ບໍ່ຖືກ';
+    document.getElementById('admin-pin-inp').value = '';
+    return;
+  }
   const adminInfo = { id: 'admin', name: 'Admin', role: 'admin', active: true };
   saveSession(adminInfo);
   unlockApp(adminInfo);
