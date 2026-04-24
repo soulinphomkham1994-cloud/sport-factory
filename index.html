@@ -766,55 +766,7 @@ body.light-mode .scan-result-modal{background:#fff;}
 .a4-slog-row .sl-stage{flex:1;}
 .a4-slog-row .sl-staff{font-weight:700;color:#E53935;}
 
-/* ===== LOGIN GATE ===== */
-#login-gate {
-  position: fixed; inset: 0; z-index: 999;
-  background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-}
-.login-card {
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: var(--rl); padding: 36px 32px;
-  width: min(420px, 96vw);
-  box-shadow: 0 24px 64px rgba(0,0,0,0.7);
-  display: flex; flex-direction: column; align-items: center;
-}
-.login-logo {
-  width: 56px; height: 56px; border-radius: 14px;
-  background: linear-gradient(135deg, var(--red), var(--red-dark));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; font-weight: 800; color: #fff;
-  box-shadow: 0 4px 16px rgba(229,57,53,0.4);
-  margin-bottom: 16px;
-}
-.login-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
-.login-sub { font-size: 12px; color: var(--text3); margin-bottom: 28px; text-align: center; }
-.login-field { width: 100%; margin-bottom: 14px; }
-.login-label { display: block; font-size: 11px; font-weight: 700; color: var(--text3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 6px; }
-.login-input {
-  width: 100%; height: 46px; padding: 0 16px;
-  border: 1px solid var(--border2); border-radius: var(--r);
-  background: var(--bg3); color: var(--text);
-  font-family: 'Noto Sans Lao', sans-serif; font-size: 15px;
-  outline: none; transition: border-color .2s;
-}
-.login-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(66,165,245,.2); }
-.login-pin { letter-spacing: 6px; font-size: 18px; text-align: center; }
-.login-err { color: var(--red-lite); font-size: 12px; font-weight: 600; min-height: 20px; margin-bottom: 8px; text-align: center; }
-.login-btn {
-  width: 100%; height: 48px; border-radius: var(--r);
-  background: var(--red); border: none; color: #fff;
-  font-family: 'Noto Sans Lao', sans-serif; font-size: 16px; font-weight: 700;
-  cursor: pointer; transition: all .2s;
-  box-shadow: 0 4px 14px rgba(229,57,53,0.35);
-}
-.login-btn:hover { background: var(--red-dark); transform: translateY(-1px); }
-.login-btn:active { transform: translateY(0); }
-.login-divider { width: 100%; border: none; border-top: 1px solid var(--border); margin: 20px 0; }
-.login-admin-link { font-size: 11px; color: var(--text3); cursor: pointer; transition: color .2s; }
-.login-admin-link:hover { color: var(--accent); }
-.login-spinner { font-size: 13px; color: var(--text3); margin-top: 10px; }
-/* ===== END LOGIN GATE ===== */
+/* PRINT */
 @media print {
   body > *:not(#print-frame) { display:none !important; }
   #print-frame { display:block !important; position:fixed;inset:0;z-index:9999;background:#fff; }
@@ -918,33 +870,7 @@ body.light-mode .scan-result-modal{background:#fff;}
 </head>
 <body>
 
-<!-- ===== LOGIN GATE ===== -->
-<div id="login-gate">
-  <div class="login-card">
-    <div class="login-logo">SL</div>
-    <div class="login-title">ລະບົບຕິດຕາມການຜະລິດ</div>
-    <div class="login-sub">ໂຮງງານເສື້ອກີລາພິມລາຍ · Sport Factory<br>ກະລຸນາເຂົ້າສູ່ລະບົບກ່ອນໃຊ້ງານ</div>
-
-    <div class="login-field">
-      <label class="login-label">👤 ຊື່ພະນັກງານ</label>
-      <input class="login-input" id="gate-name" placeholder="ຊື່ຂອງທ່ານ..." autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('gate-pin').focus()">
-    </div>
-    <div class="login-field">
-      <label class="login-label">🔑 PIN</label>
-      <input class="login-input login-pin" id="gate-pin" type="password" maxlength="8" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter')doGateLogin()">
-    </div>
-    <div class="login-err" id="gate-err"></div>
-    <button class="login-btn" onclick="doGateLogin()">🔓 ເຂົ້າໃຊ້ງານ</button>
-
-    <hr class="login-divider">
-    <span class="login-admin-link" onclick="doAdminBypass()">🔧 ຜູ້ດູແລລະບົບ (Admin)</span>
-    <div class="login-spinner hidden" id="gate-spinner">⏳ ກຳລັງກວດສອບ...</div>
-  </div>
-</div>
-<!-- ===== END LOGIN GATE ===== -->
-
-<!-- APP CONTENT (hidden until login) -->
-<div id="app-content" style="display:none">
+<header class="hdr">
   <div class="hdr-l">
     <div class="logo">SL</div>
     <div>
@@ -1157,7 +1083,7 @@ body.light-mode .scan-result-modal{background:#fff;}
 
 <div class="toast" id="toast"></div>
 
-</div><!-- end #app-content -->
+<script>
 const STAGES=[
   '1.1.1.ກໍາລັງດໍາເນີນການ',
   '1.1.2. ກໍາລັງວາງແພັດເທີນ',
@@ -2489,26 +2415,14 @@ function toggleMobilePreview() {
 // Staff registry stored in Firestore collection: 'staff_access'
 // Each doc: { name, pin (hashed), role, active, createdAt, grantedBy }
 const STAFF_COLLECTION = 'staff_access';
-const ADMIN_PIN = '57519669'; // Change this — admin PIN to manage staff
+const ADMIN_PIN = '1234'; // Change this — admin PIN to manage staff
 
 let _currentStaff = null; // logged-in staff info
 
-// Hash PIN — tries Web Crypto (HTTPS) then falls back to simple hash (HTTP / file://)
+// Simple hash (not cryptographic, but better than plaintext)
 async function hashPin(pin) {
-  const input = 'sl-factory-' + pin;
-  try {
-    if (window.crypto && window.crypto.subtle) {
-      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
-      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-    }
-  } catch(e) { /* fall through to simple hash */ }
-  // Fallback: djb2-style hash — works on http:// and file://
-  let h = 5381;
-  for (let i = 0; i < input.length; i++) {
-    h = ((h << 5) + h) ^ input.charCodeAt(i);
-    h = h >>> 0;
-  }
-  return 'fb_' + h.toString(16).padStart(8, '0');
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('sl-factory-' + pin));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
 // ---- CSS for access control modals (injected once) ----
@@ -2763,190 +2677,9 @@ async function doStaffLogin() {
 }
 // ==================== END ACCESS CONTROL ====================
 
-// ==================== LOGIN GATE BOOT ====================
-// Session key so login persists on refresh (same browser tab session)
-const SESSION_KEY = 'sl_staff_session';
-
-function saveSession(staff) {
-  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ name: staff.name, role: staff.role, id: staff.id })); } catch(e){}
-}
-function loadSession() {
-  try { const s = sessionStorage.getItem(SESSION_KEY); return s ? JSON.parse(s) : null; } catch(e){ return null; }
-}
-function clearSession() {
-  try { sessionStorage.removeItem(SESSION_KEY); } catch(e){}
-}
-
-function unlockApp(staffInfo) {
-  _currentStaff = staffInfo;
-  document.getElementById('login-gate').style.display = 'none';
-  document.getElementById('app-content').style.display = 'block';
-
-  // Show who is logged in + logout button in header
-  const hdrRight = document.querySelector('.hdr > div:last-child') || document.querySelector('.hdr');
-  if (hdrRight) {
-    const tag = document.createElement('div');
-    tag.id = 'staff-tag';
-    tag.style.cssText = 'display:flex;align-items:center;gap:8px;';
-    tag.innerHTML = `
-      <span style="font-size:12px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);padding:4px 10px;border-radius:var(--r)">
-        👤 <b style="color:var(--text)">${staffInfo.name}</b>
-        <span style="color:var(--text3);font-size:10px;margin-left:4px">${{staff:'ທົ່ວໄປ',editor:'ບັນນາທິການ',admin:'ຜູ້ດູແລ'}[staffInfo.role]||''}</span>
-      </span>
-      <button class="btn-hdr-act" onclick="logoutStaff()" style="color:#FF8A80;border-color:rgba(229,57,53,.3);background:rgba(229,57,53,.06)">🚪 ອອກ</button>`;
-    hdrRight.insertBefore(tag, hdrRight.firstChild);
-  }
-
-  // Hide staff manager button if not admin
-  if (staffInfo.role !== 'admin') {
-    const mgrBtn = document.querySelector('[onclick="openAccessManager()"]');
-    if (mgrBtn) mgrBtn.style.display = 'none';
-  }
-
-  initSelectors();
-  startRealtimeListener();
-}
-
-function logoutStaff() {
-  if (!confirm('ຢືນຢັນການອອກຈາກລະບົບ?')) return;
-  clearSession();
-  location.reload();
-}
-
-async function doGateLogin() {
-  const nameEl = document.getElementById('gate-name');
-  const pinEl  = document.getElementById('gate-pin');
-  const err    = document.getElementById('gate-err');
-  const spinner = document.getElementById('gate-spinner');
-  const btn    = document.querySelector('.login-btn');
-
-  const name = (nameEl?.value || '').trim();
-  const pin  = (pinEl?.value  || '').trim();
-
-  if (!name || !pin) { err.textContent = '⚠️ ໃສ່ຊື່ ແລະ PIN ກ່ອນ'; return; }
-
-  err.textContent = '';
-  spinner.classList.remove('hidden');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ ກຳລັງກວດສອບ...'; }
-
-  const reset = (msg) => {
-    spinner.classList.add('hidden');
-    if (btn) { btn.disabled = false; btn.innerHTML = '🔓 ເຂົ້າໃຊ້ງານ'; }
-    if (pinEl) pinEl.value = '';
-    err.style.cssText = 'color:#FF8A80;font-size:13px;font-weight:700;background:rgba(229,57,53,0.1);border:1px solid rgba(229,57,53,0.3);border-radius:6px;padding:8px 12px;margin-bottom:8px;text-align:center;min-height:0';
-    err.textContent = msg;
-  };
-
-  try {
-    const pinHash = await hashPin(pin);
-
-    // Timeout wrapper — 8 seconds
-    const snap = await Promise.race([
-      db.collection(STAFF_COLLECTION).get(),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('ໂຕເລກໝົດເວລາ — ກວດສອບ Internet')), 8000))
-    ]);
-
-    spinner.classList.add('hidden');
-    if (btn) { btn.disabled = false; btn.innerHTML = '🔓 ເຂົ້າໃຊ້ງານ'; }
-
-    if (snap.empty) {
-      reset('⚠️ ຍັງບໍ່ມີຂໍ້ມູນພະນັກງານ — ໃຊ້ Admin bypass ກ່ອນ');
-      return;
-    }
-
-    // Case-insensitive name match + pin hash match
-    const match = snap.docs.find(d => {
-      const data = d.data();
-      return data.pinHash === pinHash
-        && data.name.trim().toLowerCase() === name.toLowerCase()
-        && data.active !== false;
-    });
-
-    if (!match) {
-      // Check if name exists but PIN wrong, or account disabled
-      const nameOnly = snap.docs.find(d => d.data().name.trim().toLowerCase() === name.toLowerCase());
-      if (nameOnly && nameOnly.data().active === false) {
-        reset('⛔ ບັນຊີຂອງທ່ານຖືກປິດໃຊ້ງານ — ຕິດຕໍ່ Admin');
-      } else {
-        reset('❌ ຊື່ ຫຼື PIN ບໍ່ຖືກ — ກວດສອບອີກຄັ້ງ');
-      }
-      return;
-    }
-
-    const staffInfo = { id: match.id, ...match.data() };
-    saveSession(staffInfo);
-    unlockApp(staffInfo);
-
-  } catch(e) {
-    console.error('Login error:', e);
-    if (e.code === 'permission-denied') {
-      reset('❌ Firestore Rules ບໍ່ອະນຸຍາດ — ໃຫ້ Admin ຕັ້ງ Rules ກ່ອນ');
-    } else {
-      reset('❌ ' + (e.message || 'ເກີດຂໍ້ຜິດພາດ — ລອງໃໝ່'));
-    }
-  }
-}
-
-function doAdminBypass() {
-  // Show inline admin PIN dialog (prompt() blocked in some browsers)
-  const existing = document.getElementById('admin-bypass-box');
-  if (existing) { existing.remove(); return; }
-
-  const box = document.createElement('div');
-  box.id = 'admin-bypass-box';
-  box.style.cssText = 'margin-top:14px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:14px;width:100%';
-  box.innerHTML = `
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">🔧 Admin PIN</div>
-    <div style="display:flex;gap:8px">
-      <input id="admin-pin-inp" type="password" maxlength="12" placeholder="ໃສ່ Admin PIN..."
-        style="flex:1;height:40px;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:15px;letter-spacing:4px;outline:none"
-        onkeydown="if(event.key==='Enter')confirmAdminBypass()">
-      <button class="btn bp" onclick="confirmAdminBypass()" style="height:40px;padding:0 14px;flex-shrink:0">ເຂົ້າ</button>
-    </div>
-    <div id="admin-bypass-err" style="color:#FF8A80;font-size:12px;margin-top:6px;min-height:16px"></div>`;
-
-  const card = document.querySelector('.login-card');
-  if (card) card.appendChild(box);
-  setTimeout(() => document.getElementById('admin-pin-inp')?.focus(), 50);
-}
-
-async function confirmAdminBypass() {
-  const pin = (document.getElementById('admin-pin-inp')?.value || '').trim();
-  const err = document.getElementById('admin-bypass-err');
-  if (!pin) { if(err) err.textContent = '⚠️ ໃສ່ PIN'; return; }
-
-  const h = await hashPin(pin);
-  const adminHash = await hashPin(ADMIN_PIN);
-  if (h !== adminHash) {
-    if(err) err.textContent = '❌ PIN ບໍ່ຖືກ';
-    document.getElementById('admin-pin-inp').value = '';
-    return;
-  }
-  const adminInfo = { id: 'admin', name: 'Admin', role: 'admin', active: true };
-  saveSession(adminInfo);
-  unlockApp(adminInfo);
-}
-
-// ---- Boot: check session first, else show gate ----
-(function boot() {
-  // Firebase must be ready — check session after a tick
-  const session = loadSession();
-  if (session) {
-    // Validate session still active (non-blocking — optimistic unlock)
-    unlockApp(session);
-    // Background check: still active in Firestore
-    if (session.id && session.id !== 'admin') {
-      db.collection(STAFF_COLLECTION).doc(session.id).get().then(doc => {
-        if (!doc.exists || doc.data().active === false) {
-          toast('⛔ ບັນຊີຂອງທ່ານຖືກປິດ — ກະລຸນາຕິດຕໍ່ Admin');
-          setTimeout(() => { clearSession(); location.reload(); }, 2500);
-        }
-      }).catch(()=>{});
-    }
-  }
-  // else: login gate stays visible (default)
-})();
-// ==================== END LOGIN GATE BOOT ====================
+initSelectors();
+// Start Firebase real-time listener
+startRealtimeListener();
 </script>
 </body>
 </html>
