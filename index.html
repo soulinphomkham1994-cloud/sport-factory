@@ -934,7 +934,7 @@ body.light-mode .scan-result-modal{background:#fff;}
       <input class="login-input login-pin" id="gate-pin" type="password" maxlength="8" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter')doGateLogin()">
     </div>
     <div class="login-err" id="gate-err"></div>
-    <button class="login-btn" onclick="doGateLogin()">🔓 ເຂົ້າໃຊ້ງານ</button>
+    <button class="login-btn" id="gate-submit-btn" onclick="doGateLogin()">🔓 ເຂົ້າໃຊ້ງານ</button>
 
     <hr class="login-divider">
     <span class="login-admin-link" onclick="doAdminBypass()">🔧 ຜູ້ດູແລລະບົບ (Admin)</span>
@@ -945,6 +945,7 @@ body.light-mode .scan-result-modal{background:#fff;}
 
 <!-- APP CONTENT (hidden until login) -->
 <div id="app-content" style="display:none">
+<header class="hdr">
   <div class="hdr-l">
     <div class="logo">SL</div>
     <div>
@@ -2799,77 +2800,74 @@ function logoutStaff() {
 }
 
 async function doGateLogin() {
-  const nameEl  = document.getElementById('gate-name');
-  const pinEl   = document.getElementById('gate-pin');
-  const err     = document.getElementById('gate-err');
-  const spinner = document.getElementById('gate-spinner');
-  const btn     = document.querySelector('.login-btn');
+  // Hard fallback — if anything fails we use alert so user always sees feedback
+  var showErr = function(msg) {
+    var el = document.getElementById('gate-err');
+    if (el) {
+      el.textContent = msg;
+      el.style.cssText = 'display:block;color:#FF8A80;font-size:13px;font-weight:700;background:rgba(229,57,53,0.12);border:1px solid rgba(229,57,53,0.35);border-radius:6px;padding:8px 12px;margin-bottom:8px;text-align:center';
+    } else {
+      alert(msg);
+    }
+  };
 
-  const name = (nameEl?.value || '').trim();
-  const pin  = (pinEl?.value  || '').trim();
-
-  if (!name || !pin) { err.textContent = '⚠️ ໃສ່ຊື່ ແລະ PIN ກ່ອນ'; return; }
-
-  err.textContent = '';
-  err.style.cssText = '';
-  spinner.classList.remove('hidden');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ ກຳລັງກວດສອບ...'; }
-
-  const reset = (msg) => {
-    spinner.classList.add('hidden');
-    if (btn) { btn.disabled = false; btn.innerHTML = '🔓 ເຂົ້າໃຊ້ງານ'; }
-    if (pinEl) pinEl.value = '';
-    err.style.cssText = 'color:#FF8A80;font-size:13px;font-weight:700;background:rgba(229,57,53,0.1);border:1px solid rgba(229,57,53,0.3);border-radius:6px;padding:8px 12px;margin-bottom:8px;text-align:center;min-height:0;display:block';
-    err.textContent = msg;
+  var setBtn = function(loading) {
+    var btn = document.getElementById('gate-submit-btn');
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.textContent = loading ? '⏳ ກຳລັງກວດສອບ...' : '🔓 ເຂົ້າໃຊ້ງານ';
   };
 
   try {
-    // Fetch all staff (small collection — no index needed)
-    const snap = await Promise.race([
-      db.collection(STAFF_COLLECTION).get(),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('ໂຕເລກໝົດເວລາ (8s) — ກວດສອບ Internet')), 8000))
-    ]);
+    var name = (document.getElementById('gate-name').value || '').trim();
+    var pin  = (document.getElementById('gate-pin').value  || '').trim();
+
+    if (!name || !pin) { showErr('⚠️ ໃສ່ຊື່ ແລະ PIN ກ່ອນ'); return; }
+
+    setBtn(true);
+
+    var snap = await db.collection(STAFF_COLLECTION).get();
 
     if (snap.empty) {
-      reset('⚠️ ຍັງບໍ່ມີຂໍ້ມູນພະນັກງານ — ໃຊ້ "ຜູ້ດູແລລະບົບ" ດ້ານລຸ່ມກ່ອນ');
+      setBtn(false);
+      showErr('⚠️ ຍັງບໍ່ມີຂໍ້ມູນພະນັກງານ — ໃຊ້ ຜູ້ດູແລລະບົບ ດ້ານລຸ່ມ');
       return;
     }
 
-    const pinNorm = normalizePin(pin);
-    const nameLower = name.toLowerCase();
+    var pinNorm = normalizePin(pin);
+    var nameLow = name.toLowerCase();
+    var match   = null;
 
-    // Match: name (case-insensitive) + pin (support both old pinHash field & new pin field)
-    const match = snap.docs.find(d => {
-      const data = d.data();
-      const storedPin = normalizePin(data.pin || '');
-      const storedName = (data.name || '').trim().toLowerCase();
-      return storedName === nameLower && storedPin === pinNorm && data.active !== false;
+    snap.forEach(function(doc) {
+      if (match) return;
+      var d = doc.data();
+      var dname = (d.name || '').trim().toLowerCase();
+      var dpin  = normalizePin(d.pin || d.pinHash || '');
+      if (dname === nameLow && dpin === pinNorm && d.active !== false) {
+        match = { id: doc.id, name: d.name, role: d.role || 'staff', active: true };
+      }
     });
 
-    spinner.classList.add('hidden');
-    if (btn) { btn.disabled = false; btn.innerHTML = '🔓 ເຂົ້າໃຊ້ງານ'; }
+    setBtn(false);
 
     if (!match) {
-      const nameOnly = snap.docs.find(d => (d.data().name||'').trim().toLowerCase() === nameLower);
-      if (nameOnly && nameOnly.data().active === false) {
-        reset('⛔ ບັນຊີຂອງທ່ານຖືກປິດໃຊ້ງານ — ຕິດຕໍ່ Admin');
-      } else {
-        reset('❌ ຊື່ ຫຼື PIN ບໍ່ຖືກ — ກວດສອບໃໝ່ອີກຄັ້ງ');
-      }
+      document.getElementById('gate-pin').value = '';
+      showErr('❌ ຊື່ ຫຼື PIN ບໍ່ຖືກ');
       return;
     }
 
-    const staffInfo = { id: match.id, ...match.data() };
-    saveSession(staffInfo);
-    unlockApp(staffInfo);
+    saveSession(match);
+    unlockApp(match);
 
-  } catch(e) {
-    console.error('Login error:', e);
-    if ((e.code||'') === 'permission-denied') {
-      reset('❌ ບໍ່ມີສິດ Firestore — ໃຫ້ Admin ກຳນົດ Rules ກ່ອນ');
+  } catch(err) {
+    setBtn(false);
+    var msg = err && err.message ? err.message : String(err);
+    if (msg.indexOf('permission') !== -1 || msg.indexOf('Missing') !== -1) {
+      showErr('❌ Firestore Rules ຍັງບໍ່ຖືກ — ໃຫ້ Admin ຕັ້ງ Rules ກ່ອນ');
     } else {
-      reset('❌ ' + (e.message || 'ເກີດຂໍ້ຜິດພາດ'));
+      showErr('❌ ' + msg);
     }
+    console.error('doGateLogin error:', err);
   }
 }
 
@@ -2896,18 +2894,22 @@ function doAdminBypass() {
   setTimeout(() => document.getElementById('admin-pin-inp')?.focus(), 50);
 }
 
-async function confirmAdminBypass() {
-  const pin = (document.getElementById('admin-pin-inp')?.value || '').trim();
-  const err = document.getElementById('admin-bypass-err');
-  if (!pin) { if(err) err.textContent = '⚠️ ໃສ່ PIN'; return; }
-  if (normalizePin(pin) !== normalizePin(ADMIN_PIN)) {
-    if(err) err.textContent = '❌ PIN ບໍ່ຖືກ';
-    document.getElementById('admin-pin-inp').value = '';
-    return;
+function confirmAdminBypass() {
+  try {
+    var pin = (document.getElementById('admin-pin-inp').value || '').trim();
+    var err = document.getElementById('admin-bypass-err');
+    if (!pin) { if(err) err.textContent = '⚠️ ໃສ່ PIN'; return; }
+    if (normalizePin(pin) !== normalizePin(ADMIN_PIN)) {
+      if(err) err.textContent = '❌ PIN ບໍ່ຖືກ';
+      document.getElementById('admin-pin-inp').value = '';
+      return;
+    }
+    var adminInfo = { id: 'admin', name: 'Admin', role: 'admin', active: true };
+    saveSession(adminInfo);
+    unlockApp(adminInfo);
+  } catch(e) {
+    alert('Error: ' + e.message);
   }
-  const adminInfo = { id: 'admin', name: 'Admin', role: 'admin', active: true };
-  saveSession(adminInfo);
-  unlockApp(adminInfo);
 }
 
 // ---- Boot: check session first, else show gate ----
