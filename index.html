@@ -1958,15 +1958,32 @@ function fillFromSheet(dataAttr) {
 // ==================== END GOOGLE SHEET ====================
 
 // ==================== AUTO SYNC FROM GOOGLE SHEET (NEW) ====================
-// Feature A: ດຶງ INV ໃໝ່ (col E) ຈາກ Sheet ເພີ່ມເຂົ້າລະບົບອັດຕະໂນມັດ
+// Feature A: ດຶງ INV ໃໝ່ (col E) ສະເພາະລາຍການທີ່ col C = ວັນນີ້ + ເວລາ 08:00–17:30
 // Feature B: Popup ແຈ້ງເຕືອນ Order ດ່ວນ (col P = "ດ່ວນ" / "ດ່ວນທີ່ສຸດ") ຍ້ອນຫຼັງ 3 ວັນ
+//            → ສະແດງ list ລາຍການຄົບທຸກ field ໃນ modal ແຍກ
 
 const COL_URGENCY = 15; // Column P (0-based index)
 let _autoSyncRunning = false;
 
+// ---- Helper: return true if now is inside 08:00–17:30 ----
+function isWithinWorkHours() {
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const totalMin = h * 60 + m;
+  return totalMin >= (8 * 60) && totalMin <= (17 * 60 + 30); // 480–1050
+}
+
+// ---- Helper: ISO string of today (yyyy-mm-dd) ----
+function todayISO() {
+  return toISO(new Date());
+}
+
+// ======== CSS ========
 (function injectUrgentCSS() {
   const s = document.createElement('style');
   s.textContent = `
+  /* ---- Urgent banner (top strip) ---- */
   #urgent-popup {
     position: sticky; top: 64px; z-index: 49; width: 100%;
     background: linear-gradient(135deg, #B71C1C 0%, #E53935 100%);
@@ -1975,31 +1992,167 @@ let _autoSyncRunning = false;
     animation: urgSlideDown .4s cubic-bezier(.18,.89,.32,1.28);
   }
   @keyframes urgSlideDown { from{transform:translateY(-100%);opacity:0} to{transform:translateY(0);opacity:1} }
-  .urg-inner {
+  .urg-bar {
     max-width:1440px; margin:0 auto; padding:10px 2rem;
-    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
   }
-  .urg-icon { font-size:22px; flex-shrink:0; animation: urgPulse 1s infinite; }
-  @keyframes urgPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
-  .urg-title { font-size:14px; font-weight:800; letter-spacing:.04em; flex-shrink:0; white-space:nowrap; }
-  .urg-list  { display:flex; flex-wrap:wrap; gap:8px; flex:1; }
+  .urg-icon { font-size:22px; flex-shrink:0; animation:urgPulse 1s infinite; }
+  @keyframes urgPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.22)} }
+  .urg-bar-title { font-size:14px; font-weight:800; letter-spacing:.04em; flex-shrink:0; white-space:nowrap; }
+  .urg-bar-tags { display:flex; flex-wrap:wrap; gap:7px; flex:1; }
   .urg-tag {
     background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35);
-    border-radius:6px; padding:4px 10px; font-size:12px; font-weight:700;
-    display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
+    border-radius:6px; padding:3px 10px; font-size:12px; font-weight:700;
+    display:inline-flex; align-items:center; gap:5px; white-space:nowrap; cursor:default;
   }
-  .urg-tag.top { background:rgba(255,255,255,.35); border-color:rgba(255,255,255,.7); }
-  .urg-close {
-    background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
+  .urg-tag.top { background:rgba(255,255,255,.35); border-color:rgba(255,255,255,.8); }
+  .urg-bar-btns { display:flex; gap:8px; flex-shrink:0; }
+  .urg-btn {
+    background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.35);
     color:#fff; border-radius:6px; padding:6px 14px; cursor:pointer;
-    font-size:13px; font-weight:700; font-family:'Noto Sans Lao',sans-serif;
-    transition:background .2s; flex-shrink:0; white-space:nowrap;
+    font-size:12px; font-weight:700; font-family:'Noto Sans Lao',sans-serif;
+    transition:background .2s; white-space:nowrap;
   }
-  .urg-close:hover { background:rgba(255,255,255,.32); }
+  .urg-btn:hover { background:rgba(255,255,255,.30); }
+  .urg-btn.detail { background:rgba(255,255,255,.28); border-color:rgba(255,255,255,.7); }
+
+  /* ---- Urgent detail modal ---- */
+  #urg-detail-ov {
+    position:fixed; inset:0; background:rgba(0,0,0,0.86);
+    backdrop-filter:blur(4px); display:flex; align-items:center;
+    justify-content:center; z-index:600;
+  }
+  .urg-modal {
+    background:var(--bg2); border:1px solid var(--red-dark);
+    border-radius:var(--rl); width:min(700px,97vw);
+    max-height:90vh; display:flex; flex-direction:column;
+    box-shadow:0 20px 60px rgba(229,57,53,0.35);
+    overflow:hidden;
+  }
+  .urg-modal-hdr {
+    background:linear-gradient(135deg,#B71C1C,#E53935);
+    padding:14px 20px; display:flex; align-items:center;
+    justify-content:space-between; flex-shrink:0;
+  }
+  .urg-modal-title { font-size:15px; font-weight:800; color:#fff; }
+  .urg-modal-close {
+    background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.4);
+    color:#fff; border-radius:6px; width:30px; height:30px; cursor:pointer;
+    font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center;
+    transition:background .2s;
+  }
+  .urg-modal-close:hover { background:rgba(255,255,255,.4); }
+  .urg-modal-body { overflow-y:auto; padding:16px 20px; flex:1; }
+  .urg-legend {
+    display:flex; gap:16px; margin-bottom:14px; flex-wrap:wrap;
+    font-size:11px; font-weight:700; color:var(--text3);
+    letter-spacing:.06em; text-transform:uppercase;
+    padding-bottom:10px; border-bottom:1px solid var(--border);
+  }
+  .urg-legend span { display:flex; align-items:center; gap:5px; }
+  .urg-item {
+    display:grid;
+    grid-template-columns: 90px 1fr 1fr 100px;
+    gap:10px; align-items:center;
+    padding:11px 14px; border-radius:var(--r);
+    border:1px solid var(--border); background:var(--bg3);
+    margin-bottom:8px; transition:border-color .15s;
+  }
+  .urg-item:hover { border-color:var(--border2); background:var(--bg4); }
+  .urg-item.is-top { border-color:rgba(229,57,53,.5); background:var(--red-dim); }
+  .urg-item-badge {
+    display:inline-flex; align-items:center; justify-content:center;
+    gap:4px; padding:4px 8px; border-radius:5px;
+    font-size:11px; font-weight:800; white-space:nowrap;
+  }
+  .urg-item-badge.top { background:var(--red-dim); color:var(--red-lite); border:1px solid var(--red-dark); }
+  .urg-item-badge.norm { background:rgba(255,183,77,.12); color:#FFB74D; border:1px solid rgba(255,183,77,.3); }
+  .urg-item-inv { font-family:var(--mono); font-weight:800; font-size:13px; color:var(--accent); }
+  .urg-item-name { font-weight:700; font-size:13px; color:var(--text); }
+  .urg-item-sub { font-size:11px; color:var(--text3); margin-top:2px; }
+  .urg-item-due { font-family:var(--mono); font-size:12px; font-weight:700; text-align:right; }
+  .urg-item-due.overdue { color:var(--red-lite); }
+  .urg-item-due.ok { color:#4DBF8A; }
+  .urg-empty { text-align:center; padding:32px; color:var(--text3); font-size:14px; }
+  .urg-modal-footer {
+    padding:12px 20px; border-top:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    flex-shrink:0; font-size:12px; color:var(--text3); gap:10px;
+  }
   `;
   document.head.appendChild(s);
 })();
 
+// ======== Urgent Detail Modal ========
+function openUrgentDetail(orders) {
+  const existing = document.getElementById('urg-detail-ov');
+  if (existing) existing.remove();
+
+  const ov = document.createElement('div');
+  ov.id = 'urg-detail-ov';
+  ov.addEventListener('click', function(e) {
+    if (e.target === ov) ov.remove();
+  });
+
+  const todayStr = todayISO();
+  const topCount  = orders.filter(function(o) { return o.urgency === 'ດ່ວນທີ່ສຸດ'; }).length;
+  const normCount = orders.length - topCount;
+
+  const rowsHTML = orders.map(function(o, idx) {
+    const isTop   = o.urgency === 'ດ່ວນທີ່ສຸດ';
+    const isOver  = o.due && o.due < todayStr;
+    const dueDisp = o.due
+      ? new Date(o.due + 'T00:00:00').toLocaleDateString('lo-LA', {day:'2-digit',month:'short',year:'2-digit'})
+      : '—';
+    const ordDisp = o.orderdate
+      ? new Date(o.orderdate + 'T00:00:00').toLocaleDateString('lo-LA', {day:'2-digit',month:'short',year:'2-digit'})
+      : '—';
+    return '<div class="urg-item' + (isTop ? ' is-top' : '') + '">' +
+      '<span class="urg-item-badge ' + (isTop ? 'top' : 'norm') + '">' +
+        (isTop ? '🔴 ດ່ວນທີ່ສຸດ' : '🟠 ດ່ວນ') +
+      '</span>' +
+      '<div>' +
+        '<div class="urg-item-inv">' + (o.code || '—') + '</div>' +
+        '<div class="urg-item-name">' + (o.name || '—') + '</div>' +
+        '<div class="urg-item-sub">ຮັບ Order: ' + ordDisp + '</div>' +
+      '</div>' +
+      '<div>' +
+        (o.name ? '<div style="font-size:11px;color:var(--text2);font-weight:600">ລາຍການ #' + (idx + 1) + '</div>' : '') +
+        '<div style="font-size:11px;color:var(--text3);margin-top:2px">3 ວັນຫຼ້າສຸດ</div>' +
+      '</div>' +
+      '<div class="urg-item-due ' + (isOver ? 'overdue' : 'ok') + '">' +
+        (isOver ? '⚠️ ' : '📅 ') + dueDisp +
+        '<div style="font-size:10px;color:var(--text3);font-weight:400;margin-top:2px">' +
+          (isOver ? 'ເກີນກຳນົດ' : 'ກຳນົດສົ່ງ') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  ov.innerHTML =
+    '<div class="urg-modal">' +
+      '<div class="urg-modal-hdr">' +
+        '<div class="urg-modal-title">🚨 ລາຍການ Order ດ່ວນ — 3 ວັນຫຼ້າສຸດ (' + orders.length + ' ລາຍການ)</div>' +
+        '<button class="urg-modal-close" onclick="document.getElementById(\'urg-detail-ov\').remove()">×</button>' +
+      '</div>' +
+      '<div class="urg-modal-body">' +
+        '<div class="urg-legend">' +
+          '<span>🔴 ດ່ວນທີ່ສຸດ: <b style="color:var(--red-lite)">' + topCount + ' ລາຍການ</b></span>' +
+          '<span>🟠 ດ່ວນ: <b style="color:#FFB74D">' + normCount + ' ລາຍການ</b></span>' +
+          '<span style="margin-left:auto;color:var(--text3)">ເວລາ 08:00–17:30 ຂໍ້ມູນ sync ອັດຕະໂນມັດ</span>' +
+        '</div>' +
+        (rowsHTML || '<div class="urg-empty">ບໍ່ມີລາຍການ</div>') +
+      '</div>' +
+      '<div class="urg-modal-footer">' +
+        '<span>ຂໍ້ມູນດຶງຈາກ Google Sheet · Col E = INV · Col P = ລະດັບດ່ວນ</span>' +
+        '<button class="btn" onclick="document.getElementById(\'urg-detail-ov\').remove()" style="height:34px;font-size:13px">ປິດ</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(ov);
+}
+
+// ======== Urgent Banner (top strip) ========
 function showUrgentPopup(orders) {
   const existing = document.getElementById('urgent-popup');
   if (existing) existing.remove();
@@ -2007,23 +2160,25 @@ function showUrgentPopup(orders) {
   const popup = document.createElement('div');
   popup.id = 'urgent-popup';
 
-  const listHTML = orders.map(function(o) {
+  const tagsHTML = orders.slice(0, 6).map(function(o) {
     const isTop = o.urgency === 'ດ່ວນທີ່ສຸດ';
-    const dueStr = o.due ? ' → ສົ່ງ ' + o.due : '';
     return '<span class="urg-tag' + (isTop ? ' top' : '') + '">' +
-      (isTop ? '🔴' : '🟠') + ' ' + (o.code || '—') + ' · ' + (o.name || '—') + dueStr +
-      '</span>';
-  }).join('');
+      (isTop ? '🔴' : '🟠') + ' ' + (o.code || '—') +
+      (o.name ? ' · ' + o.name : '') +
+    '</span>';
+  }).join('') + (orders.length > 6 ? '<span class="urg-tag">+' + (orders.length - 6) + ' ລາຍການ</span>' : '');
 
   popup.innerHTML =
-    '<div class="urg-inner">' +
+    '<div class="urg-bar">' +
       '<div class="urg-icon">🚨</div>' +
-      '<div class="urg-title">⚡ ອໍເດີດ່ວນ! (' + orders.length + ' ລາຍການ 3 ວັນຫຼ້າສຸດ)</div>' +
-      '<div class="urg-list">' + listHTML + '</div>' +
-      '<button class="urg-close" onclick="document.getElementById(\'urgent-popup\').remove()">✕ ປິດ</button>' +
+      '<div class="urg-bar-title">Order ດ່ວນ! (' + orders.length + ' ລາຍການ)</div>' +
+      '<div class="urg-bar-tags">' + tagsHTML + '</div>' +
+      '<div class="urg-bar-btns">' +
+        '<button class="urg-btn detail" onclick="openUrgentDetail(_urgentOrdersCache)">📋 ເບິ່ງລາຍການ</button>' +
+        '<button class="urg-btn" onclick="document.getElementById(\'urgent-popup\').remove()">✕ ປິດ</button>' +
+      '</div>' +
     '</div>';
 
-  // Insert right after the sticky header
   const hdr = document.querySelector('.hdr');
   if (hdr && hdr.parentNode) {
     hdr.parentNode.insertBefore(popup, hdr.nextSibling);
@@ -2032,9 +2187,12 @@ function showUrgentPopup(orders) {
   }
 }
 
+// Cache so the "ເບິ່ງລາຍການ" button can reopen modal after banner is closed
+var _urgentOrdersCache = [];
+
+// ======== Check Urgent Orders (col P + col C within 3 days) ========
 async function checkUrgentOrders() {
   try {
-    // Use cached rows or reload; no force-refresh so we don't interfere with user actions
     const rows = await loadSheetRows();
     const now = new Date();
     const threeDaysAgo = new Date(now);
@@ -2061,14 +2219,18 @@ async function checkUrgentOrders() {
       });
     });
 
+    // Sort: ດ່ວນທີ່ສຸດ first, then by due date asc
+    urgentOrders.sort(function(a, b) {
+      const ta = (b.urgency === 'ດ່ວນທີ່ສຸດ' ? 1 : 0) - (a.urgency === 'ດ່ວນທີ່ສຸດ' ? 1 : 0);
+      if (ta !== 0) return ta;
+      return (a.due || '9999') < (b.due || '9999') ? -1 : 1;
+    });
+
+    _urgentOrdersCache = urgentOrders;
+
     if (urgentOrders.length > 0) {
-      // Sort: ດ່ວນທີ່ສຸດ first
-      urgentOrders.sort(function(a, b) {
-        return (b.urgency === 'ດ່ວນທີ່ສຸດ' ? 1 : 0) - (a.urgency === 'ດ່ວນທີ່ສຸດ' ? 1 : 0);
-      });
       showUrgentPopup(urgentOrders);
     } else {
-      // Remove popup if no urgent orders anymore
       const p = document.getElementById('urgent-popup');
       if (p) p.remove();
     }
@@ -2077,12 +2239,17 @@ async function checkUrgentOrders() {
   }
 }
 
+// ======== Auto-sync: only rows where col C = TODAY and inside work hours ========
 async function autoSyncNewFromSheet() {
   if (_autoSyncRunning) return;
+  // Only run during work hours 08:00–17:30
+  if (!isWithinWorkHours()) return;
+
   _autoSyncRunning = true;
   try {
-    _sheetRows = null; // force fresh fetch every cycle
+    _sheetRows = null; // force fresh fetch
     const rows = await loadSheetRows();
+    const todayStr = todayISO(); // e.g. "2025-05-01"
 
     // Build set of existing INV codes (case-insensitive)
     const existingCodes = new Set(
@@ -2093,21 +2260,27 @@ async function autoSyncNewFromSheet() {
 
     let added = 0;
     for (var ri = 0; ri < rows.length; ri++) {
-      const d = rowToData(rows[ri]);
+      const row = rows[ri];
+      const d   = rowToData(row);
       if (!d.code) continue;
+
+      // ✅ Filter: col C (orderdate) must equal today
+      const orderdateISO = parseSheetDate(d.orderdate);
+      if (orderdateISO !== todayStr) continue;
+
       const codeKey = d.code.trim().toUpperCase();
       if (existingCodes.has(codeKey)) continue;
 
-      // New INV found — add to Firestore
+      // New INV with today's date — add to Firestore
       const obj = {
         code        : d.code.trim(),
         name        : d.name || '',
         qty         : parseInt(d.qty) || 0,
         fabric      : d.fabric || '',
         worktype    : d.worktype || '',
-        orderdate   : parseSheetDate(d.orderdate) || toISO(today),
+        orderdate   : orderdateISO,
         due         : parseSheetDate(d.due) || '',
-        start       : parseSheetDate(d.orderdate) || toISO(today),
+        start       : orderdateISO,
         stage       : STAGES[0],
         defect      : 0,
         note        : '',
@@ -2123,7 +2296,7 @@ async function autoSyncNewFromSheet() {
       };
       try {
         await db.collection(COLLECTION).add(obj);
-        existingCodes.add(codeKey); // prevent double-add within same run
+        existingCodes.add(codeKey);
         added++;
       } catch(addErr) {
         console.warn('autoSync add failed:', addErr.message);
@@ -2131,7 +2304,7 @@ async function autoSyncNewFromSheet() {
     }
 
     if (added > 0) {
-      toast('📋 ເພີ່ມ ' + added + ' ລາຍການໃໝ່ຈາກ Google Sheet ອັດຕະໂນມັດ ✅');
+      toast('📋 ເພີ່ມ ' + added + ' ລາຍການໃໝ່ (ວັນນີ້) ຈາກ Google Sheet ✅');
     }
   } catch(e) {
     console.warn('autoSyncNewFromSheet failed:', e.message);
@@ -2140,20 +2313,16 @@ async function autoSyncNewFromSheet() {
   }
 }
 
-// ---- Polling loop: starts 10s after page load, repeats every 2 min ----
+// ---- Polling loop: 10s after boot, then every 2 min ----
 (function startAutoSyncLoop() {
   async function runCycle() {
-    // Only run when a staff member is logged in
     if (typeof _currentStaff === 'undefined' || !_currentStaff) return;
-    await autoSyncNewFromSheet();  // Feature A
-    await checkUrgentOrders();     // Feature B
+    await autoSyncNewFromSheet(); // Feature A — today's rows, work hours only
+    await checkUrgentOrders();   // Feature B — urgent banner + modal list
   }
-
-  // First check 10 seconds after boot (gives Firebase time to init)
   setTimeout(function tickLoop() {
     runCycle().catch(function(){});
-    // Re-schedule next cycle every 2 minutes
-    setTimeout(tickLoop, 120000);
+    setTimeout(tickLoop, 120000); // repeat every 2 min
   }, 10000);
 })();
 // ==================== END AUTO SYNC FROM GOOGLE SHEET ====================
