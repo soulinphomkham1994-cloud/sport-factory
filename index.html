@@ -1983,53 +1983,71 @@ const _autoAddedCodes = new Set(); // session-level dedup: ປ້ອງກັນ
   .urg-icon { font-size:22px; flex-shrink:0; animation: urgPulse 1s infinite; }
   @keyframes urgPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
   .urg-title { font-size:14px; font-weight:800; letter-spacing:.04em; flex-shrink:0; white-space:nowrap; }
-  .urg-list  { display:flex; flex-wrap:wrap; gap:8px; flex:1; }
   .urg-tag {
     background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35);
     border-radius:6px; padding:4px 10px; font-size:12px; font-weight:700;
     display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
   }
   .urg-tag.top { background:rgba(255,255,255,.35); border-color:rgba(255,255,255,.7); }
-  .urg-close {
+  .urg-close, .urg-list-btn {
     background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
     color:#fff; border-radius:6px; padding:6px 14px; cursor:pointer;
     font-size:13px; font-weight:700; font-family:'Noto Sans Lao',sans-serif;
     transition:background .2s; flex-shrink:0; white-space:nowrap;
   }
-  .urg-close:hover { background:rgba(255,255,255,.32); }
+  .urg-close:hover, .urg-list-btn:hover { background:rgba(255,255,255,.32); }
+  .urg-list-panel {
+    max-width:1440px; margin:0 auto; padding:0 2rem 12px;
+    display:none; flex-wrap:wrap; gap:8px;
+  }
+  .urg-list-panel.open { display:flex; }
   `;
   document.head.appendChild(s);
 })();
 
 function showUrgentPopup(orders) {
-  const existing = document.getElementById('urgent-popup');
+  var existing = document.getElementById('urgent-popup');
   if (existing) existing.remove();
 
-  const popup = document.createElement('div');
+  var popup = document.createElement('div');
   popup.id = 'urgent-popup';
 
-  const listHTML = orders.map(function(o) {
-    const isTop = o.urgency === 'ດ່ວນທີ່ສຸດ';
-    const dueStr = o.due ? ' → ສົ່ງ ' + o.due : '';
+  var listHTML = orders.map(function(o) {
+    var isTop = o.urgency === '\u0e14\u0ec8\u0ea7\u0e99\u0e97\u0eb5\u0ec8\u0eaa\u0eb8\u0e94';
+    var dueStr = o.due ? ' \u2192 \u0eaa\u0ebb\u0ec8\u0e87 ' + o.due : '';
     return '<span class="urg-tag' + (isTop ? ' top' : '') + '">' +
-      (isTop ? '🔴' : '🟠') + ' ' + (o.code || '—') + ' · ' + (o.name || '—') + dueStr +
+      (isTop ? '\ud83d\udd34' : '\ud83d\udfe0') + ' ' + (o.code || '\u2014') + ' \u00b7 ' + (o.name || '\u2014') + dueStr +
       '</span>';
   }).join('');
 
+  var cnt = orders.length;
   popup.innerHTML =
     '<div class="urg-inner">' +
-      '<div class="urg-icon">🚨</div>' +
-      '<div class="urg-title">⚡ ອໍເດີດ່ວນ! (' + orders.length + ' ລາຍການ 3 ວັນຫຼ້າສຸດ)</div>' +
-      '<div class="urg-list">' + listHTML + '</div>' +
-      '<button class="urg-close" onclick="document.getElementById(\'urgent-popup\').remove()">✕ ປິດ</button>' +
-    '</div>';
+      '<div class="urg-icon">\ud83d\udea8</div>' +
+      '<div class="urg-title">\u26a1 \u0ead\u0eb5\u0ec0\u0e94\u0eb5\u0e94\u0ec8\u0ea7\u0e99! (' + cnt + ' \u0ea5\u0eb2\u0e8d\u0e81\u0eb2\u0e99 3 \u0ea7\u0eb1\u0e99\u0eab\u0ebb\u0ec9\u0eb2\u0eaa\u0eb8\u0e94)</div>' +
+      '<button class="urg-list-btn" id="urg-toggle-btn" onclick="urgToggleList()">' +
+        '\ud83d\udccb \u0e14\u0e39 List (' + cnt + ')' +
+      '</button>' +
+      '<button class="urg-close" onclick="document.getElementById(\'urgent-popup\').remove()">\u2715 \u0e1b\u0eb4\u0e14</button>' +
+    '</div>' +
+    '<div class="urg-list-panel" id="urg-list-panel">' + listHTML + '</div>';
 
-  // Insert right after the sticky header
-  const hdr = document.querySelector('.hdr');
+  var hdr = document.querySelector('.hdr');
   if (hdr && hdr.parentNode) {
     hdr.parentNode.insertBefore(popup, hdr.nextSibling);
   } else {
     document.body.insertBefore(popup, document.body.firstChild);
+  }
+}
+
+function urgToggleList() {
+  var p = document.getElementById('urg-list-panel');
+  var b = document.getElementById('urg-toggle-btn');
+  if (!p || !b) return;
+  if (p.classList.toggle('open')) {
+    b.innerHTML = '\u25b2 \u0e0b\u0e48\u0e2d\u0e19 List';
+  } else {
+    b.innerHTML = '\ud83d\udccb \u0e14\u0e39 List';
   }
 }
 
@@ -2084,35 +2102,39 @@ async function autoSyncNewFromSheet() {
   try {
     _sheetRows = null; // force fresh fetch every cycle
 
-    // ວັນປັດຈຸບັນໃນຮູບແບບ ISO (YYYY-MM-DD) ສຳລັບກັ່ນສະເພາະລາຍການຂອງວັນນີ້
-    const todayISO = toISO(new Date());
+    // วันปัจจุบัน local timezone YYYY-MM-DD
+    const _tn = new Date();
+    const todayISO = _tn.getFullYear() + '-' +
+      String(_tn.getMonth()+1).padStart(2,'0') + '-' +
+      String(_tn.getDate()).padStart(2,'0');
 
     const rows = await loadSheetRows();
+    console.log('[autoSync] Sheet rows loaded:', rows.length, '| today:', todayISO);
 
-    // Build set of existing INV codes (case-insensitive) — ຈາກ Firestore + session cache
+    // Build set of existing INV codes (case-insensitive)
     const existingCodes = new Set(
       (typeof items !== 'undefined' ? items : []).map(function(it) {
         return (it.code || '').trim().toUpperCase();
       })
     );
-    // ເພີ່ມ session-level codes ທີ່ add ໄປແລ້ວໃນ session ນີ້ (ປ້ອງກັນ add ຊ້ຳ)
     _autoAddedCodes.forEach(function(c) { existingCodes.add(c); });
 
     let added = 0;
+    let skippedDate = 0;
+    let skippedDup = 0;
     for (var ri = 0; ri < rows.length; ri++) {
       const d = rowToData(rows[ri]);
       if (!d.code) continue;
 
-      // ກັ່ນສະເພາະລາຍການທີ່ orderdate = ວັນປັດຈຸບັນເທົ່ານັ້ນ
+      // กรองเฉพาะ INV ที่ orderdate = วันนี้
       const ordDateISO = parseSheetDate(d.orderdate);
-      if (ordDateISO !== todayISO) continue;
+      if (ordDateISO !== todayISO) { skippedDate++; continue; }
 
       const codeKey = d.code.trim().toUpperCase();
+      if (existingCodes.has(codeKey)) { skippedDup++; continue; }
 
-      // ຂ້າມຖ້າ code ນີ້ຖືກ add ໄປແລ້ວ (Firestore ຫຼື session cache)
-      if (existingCodes.has(codeKey)) continue;
+      console.log('[autoSync] Adding new INV:', d.code, '| date:', ordDateISO);
 
-      // New INV ຂອງວັນນີ້ — add to Firestore
       const obj = {
         code        : d.code.trim(),
         name        : d.name || '',
@@ -2137,19 +2159,20 @@ async function autoSyncNewFromSheet() {
       };
       try {
         await db.collection(COLLECTION).add(obj);
-        existingCodes.add(codeKey);      // ປ້ອງກັນ double-add ໃນ run ດຽວກັນ
-        _autoAddedCodes.add(codeKey);    // ບັນທຶກ session cache
+        existingCodes.add(codeKey);
+        _autoAddedCodes.add(codeKey);
         added++;
       } catch(addErr) {
-        console.warn('autoSync add failed:', addErr.message);
+        console.warn('[autoSync] add failed:', addErr.message);
       }
     }
 
+    console.log('[autoSync] Done — added:', added, '| skipped(date):', skippedDate, '| skipped(dup):', skippedDup);
     if (added > 0) {
       toast('📋 ເພີ່ມ ' + added + ' ລາຍການໃໝ່ຈາກ Google Sheet ອັດຕະໂນມັດ ✅');
     }
   } catch(e) {
-    console.warn('autoSyncNewFromSheet failed:', e.message);
+    console.warn('[autoSync] failed:', e.message);
   } finally {
     _autoSyncRunning = false;
   }
