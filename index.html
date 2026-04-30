@@ -1731,6 +1731,12 @@ async function del(id){
   if(!confirm(`ຢືນຢັນການລຶບລາຍການ "${it.name}"?`))return;
   try {
     await db.collection(COLLECTION).doc(id).delete();
+    // ✅ บันทึก code ลง blacklist → ป้องกัน auto-sync เพิ่มกลับจาก Sheet
+    if (it.code) {
+      const codeKey = it.code.trim().toUpperCase();
+      _deletedCodes.add(codeKey);
+      _saveDeletedCodes();
+    }
     toast('🗑️ ລຶບລາຍການສຳເລັດ');
   } catch(e){ toast('❌ '+e.message); }
 }
@@ -1780,6 +1786,23 @@ const COL = { orderdate:2, due:3, code:4, name:8, qty:9, worktype:10, fabric:11 
 
 // Cache sheet data so we don't re-fetch when user searches
 let _sheetRows = null;
+
+// ==================== DELETED CODES BLACKLIST ====================
+// เก็บ code ที่ user ลบด้วยตนเอง → ป้องกัน auto-sync เพิ่มกลับ
+const _BLACKLIST_KEY = 'autoSync_deletedCodes_v1';
+let _deletedCodes = (function() {
+  try {
+    const raw = localStorage.getItem(_BLACKLIST_KEY);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch(e) { return new Set(); }
+})();
+
+function _saveDeletedCodes() {
+  try {
+    localStorage.setItem(_BLACKLIST_KEY, JSON.stringify([..._deletedCodes]));
+  } catch(e) {}
+}
+// ==================== END BLACKLIST ====================
 
 function parseCSV(text) {
   const rows = [];
@@ -1837,23 +1860,28 @@ const CORS_PROXIES = [
   url => `https://thingproxy.freeboard.io/fetch/${url}`,
 ];
 
-async function loadSheetRows() {
-  if (_sheetRows) return _sheetRows;
-  let lastErr = null;
-  for (const proxyFn of CORS_PROXIES) {
-    try {
-      const proxyUrl = proxyFn(SHEET_CSV_URL);
-      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
-      if (!res.ok) continue;
-      const csv = await res.text();
-      if (!csv || csv.length < 10) continue;
-      const rows = parseCSV(csv);
-      if (!rows || rows.length < 2) continue;
-      _sheetRows = rows.slice(1).filter(r => (r[COL.code]||'').trim());
-      return _sheetRows;
-    } catch(e) { lastErr = e; }
-  }
-  throw new Error('ເຊື່ອມຕໍ່ Sheet ບໍ່ໄດ້ — ກວດສອບວ່າ Sheet ແຊ "Anyone with the link" ແລ້ວລອງໃໝ່');
+async function loadSheetRows(forceFresh) {
+  if (!forceFresh && _sheetRows) return _sheetRows;
+  // ✅ Cache-bust: เพิ่ม timestamp → บังคับ proxy ดึง CSV ใหม่จริงๆ ทุกครั้ง
+  const freshUrl = SHEET_CSV_URL + '&t=' + Date.now();
+
+  // ✅ ลองทุก proxy พร้อมกัน → ใช้อันที่ตอบเร็วที่สุด (ลดเวลาจาก ~32s → ~5s)
+  let csv = null;
+  try {
+    csv = await Promise.any(
+      CORS_PROXIES.map(proxyFn =>
+        fetch(proxyFn(freshUrl), { signal: AbortSignal.timeout(10000) })
+          .then(r => { if (!r.ok) throw new Error('not ok'); return r.text(); })
+          .then(t => { if (!t || t.length < 10) throw new Error('empty'); return t; })
+      )
+    );
+  } catch(e) { /* all proxies failed */ }
+
+  if (!csv) throw new Error('ເຊື່ອມຕໍ່ Sheet ບໍ່ໄດ້ — ກວດສອບວ່າ Sheet ແຊ "Anyone with the link" ແລ້ວລອງໃໝ່');
+  const rows = parseCSV(csv);
+  if (!rows || rows.length < 2) throw new Error('ເຊື່ອມຕໍ່ Sheet ບໍ່ໄດ້ — ກວດສອບວ່າ Sheet ແຊ "Anyone with the link" ແລ້ວລອງໃໝ່');
+  _sheetRows = rows.slice(1).filter(r => (r[COL.code]||'').trim());
+  return _sheetRows;
 }
 
 // Called when user types in the INV search box
@@ -1864,7 +1892,7 @@ async function searchByINV() {
 
   wrap.innerHTML = `<div class="gs-loading">🔄 ກຳລັງໂຫລດ...</div>`;
   try {
-    const rows = await loadSheetRows();
+    const rows = await loadSheetRows(false); // ใช้ cache ได้ — แค่ search
     const matched = q
       ? rows.filter(r => (r[COL.code]||'').toLowerCase().includes(q))
       : rows;
@@ -1921,8 +1949,8 @@ async function fetchFromSheet() {
   btn.textContent = '⏳ ກຳລັງດຶງ...';
   wrap.innerHTML = `<div class="gs-loading">🔄 ກຳລັງໂຫລດ Google Sheet...</div>`;
   try {
-    _sheetRows = null; // force refresh
-    const rows = await loadSheetRows();
+    _sheetRows = null;
+    const rows = await loadSheetRows(true); // ✅ force fresh — cache-bust
     renderPickerRows(rows, wrap);
     btn.textContent = '🔄 ດຶງໃໝ່';
   } catch(err) {
@@ -2193,7 +2221,7 @@ var _urgentOrdersCache = [];
 // ======== Check Urgent Orders (col P + col C within 3 days) ========
 async function checkUrgentOrders() {
   try {
-    const rows = await loadSheetRows();
+    const rows = await loadSheetRows(false); // urgent ใช้ cache ได้ (ข้อมูล urgency ไม่ต้องสดทุกวิ)
     const now = new Date();
     const threeDaysAgo = new Date(now);
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
@@ -2249,11 +2277,10 @@ async function autoSyncNewFromSheet() {
 
   _autoSyncRunning = true;
   try {
-    _sheetRows = null; // บังคับ fetch ใหม่ทุกรอบ
-
+    // ✅ ไม่ต้อง set _sheetRows = null เอง — loadSheetRows(true) จะ force fresh + cache-bust URL
     const todayStr = todayISO(); // "yyyy-mm-dd" ของวันนี้
 
-    const rows = await loadSheetRows();
+    const rows = await loadSheetRows(true); // ✅ force fresh ทุกรอบ — cache-bust URL
 
     // Layer 1: รวบ INV ที่มีอยู่ใน items (real-time listener) → O(1) lookup
     const existingInMemory = new Set(
@@ -2262,7 +2289,7 @@ async function autoSyncNewFromSheet() {
       })
     );
 
-    // กรอง sheet rows: เฉพาะวันนี้ + มี INV + ยังไม่อยู่ใน memory
+    // กรอง sheet rows: เฉพาะวันนี้ + มี INV + ยังไม่อยู่ใน memory + ไม่อยู่ใน blacklist
     const candidates = [];
     for (var ri = 0; ri < rows.length; ri++) {
       const d = rowToData(rows[ri]);
@@ -2272,9 +2299,13 @@ async function autoSyncNewFromSheet() {
       const orderdateISO = parseSheetDate(d.orderdate);
       if (orderdateISO !== todayStr) continue;
 
-      // ✅ Filter 2: ยังไม่มีใน real-time items cache
       const codeKey = d.code.trim().toUpperCase();
+
+      // ✅ Filter 2: ยังไม่มีใน real-time items cache
       if (existingInMemory.has(codeKey)) continue;
+
+      // ✅ Filter 3 (ใหม่): ถูก user ลบแล้ว → ห้ามเพิ่มกลับ
+      if (_deletedCodes.has(codeKey)) continue;
 
       candidates.push({ d: d, codeKey: codeKey, orderdateISO: orderdateISO });
     }
@@ -2305,7 +2336,7 @@ async function autoSyncNewFromSheet() {
     for (var ki = 0; ki < candidates.length; ki++) {
       const { d, codeKey, orderdateISO } = candidates[ki];
 
-      // ✅ Filter 3: Firestore double-check — ถ้ามีแล้วข้าม
+      // ✅ Filter 4: Firestore double-check — ถ้ามีแล้วข้าม
       if (alreadyInDB.has(codeKey)) continue;
 
       const obj = {
