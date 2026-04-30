@@ -1692,14 +1692,10 @@ async function saveItem(){
   try {
     if(editId){
       await db.collection(COLLECTION).doc(editId).update(obj);
-      // Sync status to Google Sheet column F (same as scan & arrow button)
-      syncSheetStatus(obj.code, obj.stage);
       toast('✅ ບັນທຶກການແກ້ໄຂສຳເລັດ');
     } else {
       obj.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       await db.collection(COLLECTION).add(obj);
-      // Sync status to Google Sheet column F (same as scan & arrow button)
-      syncSheetStatus(obj.code, obj.stage);
       toast('✅ ເພີ່ມລາຍການໃໝ່ສຳເລັດ');
     }
   } catch(e) {
