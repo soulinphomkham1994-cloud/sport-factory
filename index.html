@@ -639,10 +639,11 @@ tbody td{padding:14px 16px;vertical-align:middle}
   .hdr > div:last-child { flex:0 0 100%; max-width:100%; width:100%; flex-wrap:nowrap; justify-content:flex-end; }
   .hdr-title { font-size:13px; }
   .hdr-sub { font-size:9px; }
-  .btn-hdr-act:first-child { display:inline-flex; flex:0 0 auto; width:96px; max-width:96px; padding:0 8px; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .btn-hdr-act:not(:first-child) { flex:0 0 42px; width:42px; height:42px; padding:0; font-size:0; color:transparent; }
-  .btn-hdr-act:nth-child(2)::after { content:'🌙'; font-size:21px; color:var(--text2); }
-  .btn-hdr-act:nth-child(3)::after { content:'🗑️'; font-size:20px; color:#FF8A80; }
+  /* ใช้ไอคอนจริงที่อยู่ในปุ่มแต่ละฟังก์ชัน ไม่สร้างไอคอนทดแทน */
+  .btn-hdr-act:first-child { display:inline-flex; flex:0 0 96px; width:96px; max-width:96px; padding:0 8px; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .btn-hdr-act:not(:first-child) { flex:0 0 42px; width:42px; height:42px; padding:0; font-size:20px; color:var(--text2); white-space:nowrap; overflow:hidden; }
+  .btn-hdr-act:nth-child(2) { color:#FFB74D; }
+  .btn-hdr-act:nth-child(3) { color:#FF8A80; }
   .btn-scan { flex:0 0 76px; width:76px; height:56px; padding:0; border-radius:10px; justify-content:center; }
   .btn-scan span:first-child { font-size:30px !important; }
   .btn-scan-label { display:none; }
