@@ -1772,7 +1772,6 @@ function toast(msg){
 // ==================== GOOGLE SHEET INTEGRATION ====================
 const SHEET_ID = '1lPp5LuwT6lAt0wozRduI8ErarHk-5iwI5PWoZwmTZoY';
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
-const CORS_PROXY = `https://api.allorigins.win/raw?url=`;
 
 // ========== FIXED COLUMN INDEX MAP (0-based) ==========
 // C=2  วันที่รับออเดอร์
@@ -1852,35 +1851,36 @@ function rowToData(row) {
   };
 }
 
-// Multiple CORS proxies — try each until one works
-const CORS_PROXIES = [
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://cors-anywhere.herokuapp.com/${url}`,
-  url => `https://thingproxy.freeboard.io/fetch/${url}`,
-];
-
+// Google Sheets public CSV endpoint.
+// เรียก Google โดยตรง ไม่ใช้ CORS proxy สาธารณะที่อาจหยุดให้บริการหรือเปลี่ยนนโยบายได้
 async function loadSheetRows(forceFresh) {
   if (!forceFresh && _sheetRows) return _sheetRows;
-  // ✅ Cache-bust: เพิ่ม timestamp → บังคับ proxy ดึง CSV ใหม่จริงๆ ทุกครั้ง
+
   const freshUrl = SHEET_CSV_URL + '&t=' + Date.now();
+  let csv = '';
 
-  // ✅ ลองทุก proxy พร้อมกัน → ใช้อันที่ตอบเร็วที่สุด (ลดเวลาจาก ~32s → ~5s)
-  let csv = null;
   try {
-    csv = await Promise.any(
-      CORS_PROXIES.map(proxyFn =>
-        fetch(proxyFn(freshUrl), { signal: AbortSignal.timeout(10000) })
-          .then(r => { if (!r.ok) throw new Error('not ok'); return r.text(); })
-          .then(t => { if (!t || t.length < 10) throw new Error('empty'); return t; })
-      )
-    );
-  } catch(e) { /* all proxies failed */ }
+    const response = await fetch(freshUrl, {
+      method: 'GET',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    csv = await response.text();
+  } catch (e) {
+    console.error('Google Sheet CSV load failed:', e);
+  }
 
-  if (!csv) throw new Error('ເຊື່ອມຕໍ່ Sheet ບໍ່ໄດ້ — ກວດສອບວ່າ Sheet ແຊ "Anyone with the link" ແລ້ວລອງໃໝ່');
+  if (!csv || csv.length < 10) {
+    throw new Error('โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ — ตรวจสอบ URL, สิทธิ์การแชร์ หรือการเชื่อมต่ออินเทอร์เน็ต');
+  }
+
   const rows = parseCSV(csv);
-  if (!rows || rows.length < 2) throw new Error('ເຊື່ອມຕໍ່ Sheet ບໍ່ໄດ້ — ກວດສອບວ່າ Sheet ແຊ "Anyone with the link" ແລ້ວລອງໃໝ່');
-  _sheetRows = rows.slice(1).filter(r => (r[COL.code]||'').trim());
+  if (!rows || rows.length < 2) {
+    throw new Error('รูปแบบข้อมูลใน Google Sheet ไม่ถูกต้องหรือไม่มีข้อมูล');
+  }
+
+  _sheetRows = rows.slice(1).filter(r => (r[COL.code] || '').trim());
   return _sheetRows;
 }
 
@@ -1903,7 +1903,7 @@ async function searchByINV() {
     }
     renderPickerRows(matched, wrap);
   } catch(err) {
-    wrap.innerHTML = `<div class="gs-picker"><div class="gs-err">❌ ${err.message}<br><small style="color:var(--text3)">ກວດສອບ: Sheet ຕ້ອງແຊ "Anyone with the link"</small></div></div>`;
+    wrap.innerHTML = `<div class="gs-picker"><div class="gs-err">❌ ${err.message}<br><small style="color:var(--text3)">ກວດສອບ URL ແລະສິດທິ໌ການແຊ Sheet ໃຫ້ສາມາດເບິ່ງໄດ້</small></div></div>`;
   }
 }
 
