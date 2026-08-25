@@ -588,7 +588,7 @@ tbody td{padding:14px 16px;vertical-align:middle}
 .a4-img-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
 .a4-img-box {
   border: 1.5px dashed #bbb; border-radius:4px;
-  height: 165px; display:flex;flex-direction:column;
+  height: 220px; display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   background:#fafafa; color:#aaa;font-size:11px;text-align:center;overflow:hidden;position:relative;
 }
@@ -677,7 +677,7 @@ tbody td{padding:14px 16px;vertical-align:middle}
 .a4-detail-img-wrap { border: 1px solid #ddd; border-radius: 3px; overflow: hidden; }
 .a4-detail-img-wrap img { width: 100%; display: block; }
 .a4-detail-placeholder {
-  border: 1.5px dashed #ccc; border-radius: 4px; height: 110px;
+  border: 1.5px dashed #ccc; border-radius: 4px; height: 140px;
   display: flex; align-items: center; justify-content: center;
   color: #bbb; font-size: 11px; text-align: center;
 }
@@ -755,7 +755,7 @@ body.light-mode .scan-result-modal{background:#fff;}
 
 /* A4 QR CODE */
 .a4-qr-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;margin-left:10px;}
-.a4-qr-wrap img{width:104px;height:104px;border:1.5px solid #ccc;border-radius:3px;image-rendering:auto;}
+.a4-qr-wrap img{width:140px;height:140px;border:1.5px solid #ccc;border-radius:3px;image-rendering:auto;}
 .a4-qr-wrap span{font-size:8px;color:#777;text-align:center;line-height:1.3;}
 
 /* A4 STAFF LOG */
@@ -2577,9 +2577,9 @@ function updatePreview() {
 
   // Build image grid (1 wide image for jersey design)
   const imgSlots = uploadedImages.length > 0
-    ? uploadedImages.slice(0,2).map(src => `<div class="a4-img-box" style="height:165px"><img src="${src}"></div>`).join('')
-    : `<div class="a4-img-box" style="height:165px"><div class="a4-img-placeholder">🏅<div>ຮູບແບບເສື້ອ</div></div></div>
-       <div class="a4-img-box" style="height:165px"><div class="a4-img-placeholder">📐<div>ຮູບລາຍລະອຽດ</div></div></div>`;
+    ? uploadedImages.slice(0,2).map(src => `<div class="a4-img-box" style="height:220px"><img src="${src}"></div>`).join('')
+    : `<div class="a4-img-box" style="height:220px"><div class="a4-img-placeholder">🏅<div>ຮູບແບບເສື້ອ</div></div></div>
+       <div class="a4-img-box" style="height:220px"><div class="a4-img-placeholder">📐<div>ຮູບລາຍລະອຽດ</div></div></div>`;
 
   // Detail images (screenshots of player list)
   const detImgs = typeof detailImages !== 'undefined' ? detailImages : [];
@@ -2594,7 +2594,7 @@ function updatePreview() {
 
   // QR code from INV number
   const qrSrc = (inv && inv !== '—')
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(inv)}&bgcolor=ffffff&color=111111&margin=8`
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(inv)}&bgcolor=ffffff&color=111111&margin=10`
     : '';
 
   // Staff log
