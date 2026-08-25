@@ -632,6 +632,59 @@ tbody td{padding:14px 16px;vertical-align:middle}
   /* Mobile preview: fit the A4 sheet to viewport width without changing print size */
   .md-preview-panel.mobile-visible { padding:10px 6px calc(16px + env(safe-area-inset-bottom)); }
   .md-preview-panel.mobile-visible .a4-sheet { transform:scale(.42); margin-top:-172mm; margin-bottom:-170mm; }
+
+  /* Header: keep the title and controls in separate, non-overlapping areas */
+  .hdr { flex-wrap:wrap; align-items:center; }
+  .hdr-l { flex:1 1 52%; max-width:52%; }
+  .hdr > div:last-child { flex:1 1 48%; max-width:48%; flex-wrap:wrap; justify-content:flex-end; }
+  .hdr-title { font-size:12px; }
+  .hdr-sub { font-size:8px; }
+  .btn-hdr-act:first-child { display:inline-flex; width:auto; max-width:76px; padding:0 7px; font-size:11px; overflow:hidden; text-overflow:ellipsis; }
+  .btn-hdr-act:not(:first-child) { width:36px; padding:0; font-size:0; }
+  .btn-hdr-act:not(:first-child)::first-letter { font-size:17px; }
+
+  /* Production list: cards instead of a wide desktop table */
+  .tw { background:transparent; border:0; box-shadow:none; overflow:visible; }
+  .tw .ts { overflow:visible; }
+  .tw table, .tw thead, .tw tbody, .tw tbody tr, .tw tbody td { display:block; width:100%; }
+  .tw thead { display:none; }
+  .tw tbody tr:not(:has(.ec)) {
+    display:grid; grid-template-columns:1fr 1fr; gap:0 12px;
+    background:var(--bg2); border:1px solid var(--border); border-radius:var(--rl);
+    padding:10px 12px; margin-bottom:10px; box-shadow:var(--shadow);
+  }
+  .tw tbody tr:not(:has(.ec)) td {
+    display:flex; align-items:flex-start; justify-content:space-between; gap:8px;
+    min-width:0; padding:7px 0; border-bottom:1px solid var(--border);
+    font-size:12px !important; white-space:normal !important;
+  }
+  .tw tbody tr:not(:has(.ec)) td::before {
+    content:''; flex:0 0 auto; color:var(--text3); font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.03em;
+  }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(1)::before { content:'#'; }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(2)::before { content:'ວັນທີ'; }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(3)::before { content:'Order'; }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(4)::before { content:'ແຜນກ'; }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(5)::before { content:'ສິນຄ້າ'; }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(6)::before { content:'ຈຳນວນ'; }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(7)::before { content:'ຂັ້ນຕອນ'; }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(8)::before { content:'ຄວາມຄືບໜ້າ'; }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(9)::before { content:'ຂອງເສຍ'; }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(10)::before { content:'ເວລາ'; }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(11)::before { content:'ຈັດການ'; }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(5),
+  .tw tbody tr:not(:has(.ec)) td:nth-child(7),
+  .tw tbody tr:not(:has(.ec)) td:nth-child(8),
+  .tw tbody tr:not(:has(.ec)) td:nth-child(9),
+  .tw tbody tr:not(:has(.ec)) td:nth-child(10),
+  .tw tbody tr:not(:has(.ec)) td:nth-child(11) { grid-column:1 / -1; }
+  .tw tbody tr:not(:has(.ec)) td:last-child { border-bottom:0; }
+  .tw tbody tr:not(:has(.ec)) td:nth-child(5) .in { font-size:14px; text-align:right; overflow-wrap:anywhere; }
+  .tw tbody tr:not(:has(.ec)) .pw { flex:1; min-width:0; }
+  .tw tbody tr:not(:has(.ec)) .act-cell { margin-left:auto; gap:8px; }
+  .tw tbody tr:not(:has(.ec)) .ab { width:40px; height:40px; font-size:16px; }
+  .tw tbody tr:has(.ec) td { padding:28px 12px; text-align:center; }
 }
 /* A4 PREVIEW */
 .a4-sheet {
