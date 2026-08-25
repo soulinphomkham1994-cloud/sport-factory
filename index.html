@@ -1862,13 +1862,13 @@ async function adv(id){
   if(idx<STAGES.length-1){
     const nextStage=STAGES[idx+1];
     try {
+      // Start Sheet sync immediately; do not wait for Firestore first.
+      syncSheetStatus(it.code, nextStage);
       await db.collection(COLLECTION).doc(id).update({
         stage: nextStage,
         orderstatus: nextStage,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      // Sync status to Google Sheet column F
-      syncSheetStatus(it.code, nextStage);
       toast(`➡️ ເລື່ອນເປັນ "${nextStage}"`);
     } catch(e){ toast('❌ '+e.message); }
   } else toast('✨ ລາຍການນີ້ສຳເລັດແລ້ວ');
@@ -3072,14 +3072,14 @@ async function saveScanStatus() {
     const logEntry = { stage: _scanSelectedStage, staff: staffName || 'ບໍ່ລະບຸ', time: nowStr, ts: Date.now() };
     const existingLog = Array.isArray(_scanTarget.staffLog) ? _scanTarget.staffLog : [];
 
+    // Start Sheet sync immediately; do not wait for Firestore first.
+    syncSheetStatus(_scanTarget.code, _scanSelectedStage);
     await db.collection(COLLECTION).doc(String(_scanTarget.id)).update({
       stage: _scanSelectedStage,
       orderstatus: _scanSelectedStage,
       staffLog: [...existingLog, logEntry],
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    // Sync to Google Sheet column F
-    syncSheetStatus(_scanTarget.code, _scanSelectedStage);
     toast(`✅ ອັບເດດ ${_scanTarget.code} → "${_scanSelectedStage}"${staffName?' ໂດຍ: '+staffName:''}`);
     closeScanResult();
   } catch(e) {
@@ -3115,13 +3115,17 @@ const STAGE_STATUS_MAP = {
 };
 
 function syncSheetStatus(invCode, stage) {
-  if (!APPS_SCRIPT_URL) return;
+  if (!APPS_SCRIPT_URL || !invCode) return Promise.resolve();
   const status = STAGE_STATUS_MAP[stage] || stage;
-  fetch(APPS_SCRIPT_URL, {
+  // text/plain is a CORS-safelisted content type, so Apps Script receives it
+  // without the slow OPTIONS preflight that application/json causes.
+  return fetch(APPS_SCRIPT_URL, {
     method: 'POST',
-    headers: {'Content-Type':'application/json'},
+    headers: {'Content-Type':'text/plain;charset=UTF-8'},
     body: JSON.stringify({inv: invCode, status: status}),
-    mode: 'no-cors'
+    mode: 'no-cors',
+    cache: 'no-store',
+    keepalive: true
   }).catch(e => console.warn('Sheet sync skipped:', e.message));
 }
 // ==================== END GOOGLE SHEET SYNC ====================
