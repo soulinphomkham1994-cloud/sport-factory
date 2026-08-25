@@ -648,6 +648,16 @@ tbody td{padding:14px 16px;vertical-align:middle}
   .btn-scan span:first-child { font-size:30px !important; }
   .btn-scan-label { display:none; }
 
+  /* Mobile scan prompt */
+  #mobile-scan-prompt { display:none; }
+  #mobile-scan-prompt.mobile-scan-visible { display:flex; position:fixed; inset:0; z-index:480; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.78); backdrop-filter:blur(4px); }
+  .mobile-scan-card { width:min(92vw,360px); padding:24px 18px; border:1px solid var(--border2); border-radius:16px; background:var(--bg2); box-shadow:0 18px 50px rgba(0,0,0,.6); text-align:center; }
+  .mobile-scan-icon { width:76px; height:76px; margin:0 auto 14px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--red); box-shadow:0 6px 18px rgba(229,57,53,.35); font-size:38px; }
+  .mobile-scan-title { color:var(--text); font-size:18px; font-weight:800; margin-bottom:8px; }
+  .mobile-scan-desc { color:var(--text2); font-size:13px; line-height:1.8; margin-bottom:18px; }
+  .mobile-scan-actions { display:flex; gap:10px; }
+  .mobile-scan-actions .btn { flex:1; min-height:48px; }
+
   /* Production list: cards instead of a wide desktop table */
   .tw { background:transparent; border:0; box-shadow:none; overflow:visible; }
   .tw .ts { overflow:visible; }
@@ -3468,9 +3478,44 @@ function unlockApp(staffInfo) {
   initSelectors();
   startRealtimeListener();
   initChatFeature(staffInfo);
+  // On Android/iOS only: show a scan shortcut after login.
+  setTimeout(showMobileScanPrompt, 450);
+}
+
+function showMobileScanPrompt() {
+  const isMobile = window.matchMedia('(max-width:700px)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (!isMobile) return;
+  try { if (sessionStorage.getItem('sf_mobile_scan_prompt_seen') === '1') return; } catch(e){}
+  if (document.getElementById('mobile-scan-prompt')) return;
+  const prompt = document.createElement('div');
+  prompt.id = 'mobile-scan-prompt';
+  prompt.className = 'mobile-scan-visible';
+  prompt.innerHTML = `
+    <div class="mobile-scan-card" role="dialog" aria-modal="true" aria-labelledby="mobile-scan-title">
+      <div class="mobile-scan-icon">📷</div>
+      <div class="mobile-scan-title" id="mobile-scan-title">ເປີດກ້ອງສະແກນ QR ບໍ?</div>
+      <div class="mobile-scan-desc">ສະແກນ QR ເພື່ອອັບເດດສະຖານະ Order ໄດ້ທັນທີ</div>
+      <div class="mobile-scan-actions">
+        <button class="btn" onclick="closeMobileScanPrompt()">ຂ້າມ</button>
+        <button class="btn bp" onclick="openMobileScannerFromPrompt()">📷 ເປີດກ້ອງສະແກນ</button>
+      </div>
+    </div>`;
+  document.body.appendChild(prompt);
+}
+
+function closeMobileScanPrompt() {
+  try { sessionStorage.setItem('sf_mobile_scan_prompt_seen', '1'); } catch(e){}
+  document.getElementById('mobile-scan-prompt')?.remove();
+}
+
+function openMobileScannerFromPrompt() {
+  try { sessionStorage.setItem('sf_mobile_scan_prompt_seen', '1'); } catch(e){}
+  document.getElementById('mobile-scan-prompt')?.remove();
+  openScanner();
 }
 
 function logoutStaff() {
+
   if (!confirm('ຢືນຢັນການອອກຈາກລະບົບ?')) return;
   if (_presenceTimer) clearInterval(_presenceTimer);
   if (_currentStaff && _currentStaff.id !== 'admin') {
