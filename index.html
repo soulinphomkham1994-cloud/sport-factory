@@ -554,6 +554,85 @@ tbody td{padding:14px 16px;vertical-align:middle}
   .mobile-preview-close { display: none !important; }
   #preview-toggle-btn { display: none !important; }
 }
+
+/* ===== MOBILE UX ONLY =====
+   ปรับเฉพาะหน้าจอไม่เกิน 700px; desktop ใช้สไตล์เดิมทั้งหมด
+*/
+@media (max-width:700px){
+  html { -webkit-text-size-adjust:100%; }
+  body { overflow-x:hidden; padding-bottom:env(safe-area-inset-bottom); }
+  button, input, select, textarea { touch-action:manipulation; }
+
+  /* Header: compact, readable and safe-area friendly */
+  .hdr {
+    height:auto; min-height:58px; padding:8px 10px;
+    gap:8px; align-items:center;
+    padding-top:max(8px, env(safe-area-inset-top));
+  }
+  .hdr-l { min-width:0; gap:8px; }
+  .logo { width:34px; height:34px; font-size:14px; }
+  .hdr-title { font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hdr-sub { font-size:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hdr > div:last-child { min-width:0; flex:0 0 auto; gap:5px !important; }
+  .hdr-date { display:none; }
+  .btn-hdr-act { width:38px; height:38px; padding:0; justify-content:center; font-size:0; }
+  .btn-hdr-act:first-child { display:none; }
+  .btn-hdr-act.btn-hdr-danger { font-size:0; }
+  .btn-hdr-act.btn-hdr-danger::first-letter { font-size:18px; }
+  .btn-scan { height:40px; padding:0 10px; gap:4px; }
+  .btn-scan-label { display:none; }
+  .btn-scan span:first-child { font-size:20px !important; }
+
+  /* Main content and status strip */
+  .main { padding:10px; }
+  .sg { gap:8px; margin-bottom:12px; }
+  .sc { padding:12px; min-height:78px; }
+  .sv { font-size:22px; }
+  .sb-container { margin-bottom:12px; padding:8px; }
+  .sb-title { font-size:10px; margin-bottom:6px; }
+  .sb { padding-bottom:2px; }
+  .sp { min-height:40px; padding:8px 10px; }
+
+  /* Search/actions: one comfortable full-width row at a time */
+  .tb {
+    top:58px; margin:0 -10px 12px; padding:8px 10px;
+    gap:8px; align-items:stretch;
+  }
+  .tbl { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .tbl .si { grid-column:1 / -1; width:100%; }
+  .tbl select { width:100%; min-width:0; }
+  .tb > .btn { flex:1; min-width:0; height:44px; padding:0 8px; font-size:12px; }
+  .tw { border-radius:8px; }
+  .ts { -webkit-overflow-scrolling:touch; }
+
+  /* Login: prevent iOS zoom and make controls easy to tap */
+  .login-card { width:min(92vw,380px); padding:22px 18px; }
+  .login-input { height:48px; font-size:16px; }
+  .login-btn { height:48px; font-size:15px; }
+
+  /* Add/edit modal */
+  .md-header { padding:12px 14px; padding-top:max(12px, env(safe-area-inset-top)); }
+  .md-form-panel { padding:14px; padding-bottom:calc(20px + env(safe-area-inset-bottom)); }
+  .md .fi, .md input, .md select, .md textarea { min-height:46px; font-size:16px; }
+  .md .btn { min-height:46px; padding:0 14px; }
+  .mf { position:sticky; bottom:0; z-index:5; margin:16px -14px -14px; padding:12px 14px calc(12px + env(safe-area-inset-bottom)); background:var(--bg2); }
+  .mf .btn { flex:1; }
+
+  /* Player grid remains usable by horizontal finger scrolling */
+  .player-grid-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .player-grid-hdr, .player-row { min-width:560px; }
+  .player-row input, .player-row select { min-height:42px; font-size:16px; }
+  .player-add-btn { height:46px; min-width:560px; font-size:14px; }
+
+  /* Upload/detail areas: larger touch targets */
+  .upload-zone { min-height:84px; display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .detail-img-zone { min-height:150px; }
+  .detail-img-thumb { min-width:150px; }
+
+  /* Mobile preview: fit the A4 sheet to viewport width without changing print size */
+  .md-preview-panel.mobile-visible { padding:10px 6px calc(16px + env(safe-area-inset-bottom)); }
+  .md-preview-panel.mobile-visible .a4-sheet { transform:scale(.42); margin-top:-172mm; margin-bottom:-170mm; }
+}
 /* A4 PREVIEW */
 .a4-sheet {
   width: 210mm; min-height: 297mm;
