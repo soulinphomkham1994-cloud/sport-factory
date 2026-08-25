@@ -117,7 +117,7 @@ body{
 .s-all:hover{background:var(--bg4); border-color: var(--accent); color: var(--accent);}
 
 /* TOOLBAR */
-.tb{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.tb{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;position:sticky;top:64px;z-index:40;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,.12)}
 .tbl{display:flex;align-items:center;gap:12px;flex:1;flex-wrap:wrap}
 select,input[type=text],input[type=search],input[type=number],input[type=date]{
   height:40px;padding:0 14px;
@@ -564,8 +564,8 @@ tbody td{padding:14px 16px;vertical-align:middle}
   font-size: 12px; line-height: 1.5;
   position: relative; border-radius: 2px;
   transform-origin: top center;
-  transform: scale(0.62);
-  margin-top: -60mm;
+  transform: scale(0.72);
+  margin-top: -74mm;
   flex-shrink: 0;
 }
 /* --- header --- */
@@ -588,7 +588,7 @@ tbody td{padding:14px 16px;vertical-align:middle}
 .a4-img-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
 .a4-img-box {
   border: 1.5px dashed #bbb; border-radius:4px;
-  height: 140px; display:flex;flex-direction:column;
+  height: 165px; display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   background:#fafafa; color:#aaa;font-size:11px;text-align:center;overflow:hidden;position:relative;
 }
@@ -677,7 +677,7 @@ tbody td{padding:14px 16px;vertical-align:middle}
 .a4-detail-img-wrap { border: 1px solid #ddd; border-radius: 3px; overflow: hidden; }
 .a4-detail-img-wrap img { width: 100%; display: block; }
 .a4-detail-placeholder {
-  border: 1.5px dashed #ccc; border-radius: 4px; height: 80px;
+  border: 1.5px dashed #ccc; border-radius: 4px; height: 110px;
   display: flex; align-items: center; justify-content: center;
   color: #bbb; font-size: 11px; text-align: center;
 }
@@ -755,8 +755,8 @@ body.light-mode .scan-result-modal{background:#fff;}
 
 /* A4 QR CODE */
 .a4-qr-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;margin-left:10px;}
-.a4-qr-wrap img{width:72px;height:72px;border:1.5px solid #ccc;border-radius:3px;}
-.a4-qr-wrap span{font-size:7px;color:#aaa;text-align:center;line-height:1.3;}
+.a4-qr-wrap img{width:104px;height:104px;border:1.5px solid #ccc;border-radius:3px;image-rendering:auto;}
+.a4-qr-wrap span{font-size:8px;color:#777;text-align:center;line-height:1.3;}
 
 /* A4 STAFF LOG */
 .a4-slog{margin-top:8px;border-top:1px solid #e0e0e0;padding-top:6px;}
@@ -816,9 +816,10 @@ body.light-mode .scan-result-modal{background:#fff;}
 .login-spinner { font-size: 13px; color: var(--text3); margin-top: 10px; }
 /* ===== END LOGIN GATE ===== */
 @media print {
+  @page { size: A4 portrait; margin: 0; }
   body > *:not(#print-frame) { display:none !important; }
-  #print-frame { display:block !important; position:fixed;inset:0;z-index:9999;background:#fff; }
-  #print-frame .a4-sheet { box-shadow:none;transform:none;margin:0;width:100%;min-height:100vh;padding:14mm; }
+  #print-frame { display:block !important; position:fixed;inset:0;z-index:9999;background:#fff;padding:0 !important;overflow:hidden; }
+  #print-frame .a4-sheet { box-shadow:none;transform:none;margin:0;width:100%;min-height:100vh;padding:10mm !important;font-size:13px; }
 }
 /* ===== QR SCANNER ===== */
 .btn-scan {
@@ -2576,9 +2577,9 @@ function updatePreview() {
 
   // Build image grid (1 wide image for jersey design)
   const imgSlots = uploadedImages.length > 0
-    ? uploadedImages.slice(0,2).map(src => `<div class="a4-img-box" style="height:120px"><img src="${src}"></div>`).join('')
-    : `<div class="a4-img-box" style="height:120px"><div class="a4-img-placeholder">🏅<div>ຮູບແບບເສື້ອ</div></div></div>
-       <div class="a4-img-box" style="height:120px"><div class="a4-img-placeholder">📐<div>ຮູບລາຍລະອຽດ</div></div></div>`;
+    ? uploadedImages.slice(0,2).map(src => `<div class="a4-img-box" style="height:165px"><img src="${src}"></div>`).join('')
+    : `<div class="a4-img-box" style="height:165px"><div class="a4-img-placeholder">🏅<div>ຮູບແບບເສື້ອ</div></div></div>
+       <div class="a4-img-box" style="height:165px"><div class="a4-img-placeholder">📐<div>ຮູບລາຍລະອຽດ</div></div></div>`;
 
   // Detail images (screenshots of player list)
   const detImgs = typeof detailImages !== 'undefined' ? detailImages : [];
@@ -2593,7 +2594,7 @@ function updatePreview() {
 
   // QR code from INV number
   const qrSrc = (inv && inv !== '—')
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=136x136&data=${encodeURIComponent(inv)}&bgcolor=ffffff&color=111111&margin=5`
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(inv)}&bgcolor=ffffff&color=111111&margin=8`
     : '';
 
   // Staff log
