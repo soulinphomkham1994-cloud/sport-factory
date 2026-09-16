@@ -1816,6 +1816,11 @@ async function saveItem(){
   const name=document.getElementById('fn').value.trim();
   const qty=parseInt(document.getElementById('fq').value)||0;
   if(!code||!name||!qty){toast('⚠️ ກະລຸນາໃສ່: ເລກ Order, ລະຫັດສິນຄ້າ ແລະ ຈຳນວນ');return;}
+  // Firestore documents have a ~1 MiB limit. Images are kept as data URLs for
+  // compatibility with existing records, so normalize them before saving.
+  const preparedImageGroups = await prepareImageGroups([uploadedImages, detailImages]);
+  const imagesToSave = preparedImageGroups[0];
+  const detailImagesToSave = preparedImageGroups[1];
   const obj={
     code,
     name,
@@ -1830,8 +1835,8 @@ async function saveItem(){
     orderstatus:document.getElementById('forderstatus').value,
     dept:document.getElementById('fdept').value,
     worktype:document.getElementById('fworktype').value,
-    images:[...uploadedImages],
-    detailImages:[...detailImages],
+    images:imagesToSave,
+    detailImages:detailImagesToSave,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
   // Close modal immediately for snappy UX
@@ -2657,6 +2662,56 @@ function renderDetailImgs() {
 
 // ==================== IMAGE UPLOAD ====================
 let uploadedImages = []; // array of base64 strings
+
+const IMAGE_MAX_TOTAL_BYTES = 700000;
+const IMAGE_MAX_BYTES_EACH = 180000;
+const IMAGE_MAX_DIMENSION = 1600;
+
+function dataUrlBytes(src) {
+  if (typeof src !== 'string') return 0;
+  const comma = src.indexOf(',');
+  const body = comma >= 0 ? src.slice(comma + 1) : src;
+  return Math.floor(body.length * 3 / 4);
+}
+
+function compressImageSource(src) {
+  return new Promise(resolve => {
+    if (!src || dataUrlBytes(src) <= IMAGE_MAX_BYTES_EACH) return resolve(src);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, IMAGE_MAX_DIMENSION / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+      canvas.height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+      const ctx = canvas.getContext('2d', {alpha:false});
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      let quality = 0.78;
+      let result = canvas.toDataURL('image/jpeg', quality);
+      while (dataUrlBytes(result) > IMAGE_MAX_BYTES_EACH && quality > 0.35) {
+        quality -= 0.08;
+        result = canvas.toDataURL('image/jpeg', quality);
+      }
+      resolve(result);
+    };
+    img.onerror = () => resolve(src);
+    img.src = src;
+  });
+}
+
+async function prepareImageGroups(groups) {
+  const output = groups.map(() => []);
+  let total = 0;
+  for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+    for (const src of groups[groupIndex]) {
+      const compressed = await compressImageSource(src);
+      const bytes = dataUrlBytes(compressed);
+      if (!bytes || total + bytes > IMAGE_MAX_TOTAL_BYTES) continue;
+      output[groupIndex].push(compressed);
+      total += bytes;
+    }
+  }
+  return output;
+}
 
 function handleImgUpload(e) {
   const files = Array.from(e.target.files);
