@@ -3067,11 +3067,17 @@ function handleScanResult(qrData) {
   setHint('🔍 ພົບ: ' + code + ' — ກຳລັງຊອກຫາ...', '');
 
   // Search in items array (match code or name)
-  const found = items.find(it =>
-    (it.code || '').toUpperCase() === code ||
-    (it.code || '').toUpperCase().includes(code) ||
-    code.includes((it.code || '').toUpperCase())
-  );
+  // 1) Exact match on order code first (trimmed, case-insensitive)
+  let found = items.find(it => (it.code || '').trim().toUpperCase() === code);
+  // 2) Fallback to partial match ONLY if exactly one non-empty candidate exists
+  //    (prevents picking the wrong order, e.g. empty/short codes matching everything)
+  if (!found && code) {
+    const partial = items.filter(it => {
+      const c = (it.code || '').trim().toUpperCase();
+      return c && (c.includes(code) || code.includes(c));
+    });
+    if (partial.length === 1) found = partial[0];
+  }
 
   if (found) {
     setHint('✅ ພົບ Order: ' + found.code, 'found');
