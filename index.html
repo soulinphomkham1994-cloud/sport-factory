@@ -2945,6 +2945,45 @@ let _scanStream = null;
 let _scanTimer  = null;
 let _scanTarget = null; // item found by scan
 let _scanSelectedStage = null;
+let _scanAudioContext = null;
+
+function primeScanAudio() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    if (!_scanAudioContext || _scanAudioContext.state === 'closed') _scanAudioContext = new AudioContextClass();
+    if (_scanAudioContext.state === 'suspended') _scanAudioContext.resume().catch(() => {});
+  } catch(e) {}
+}
+
+function playDepartmentScanSuccessSound(department) {
+  const profiles = {
+    SALE:      { wave: 'sine',     notes: [880, 1175] },
+    MARKETING: { wave: 'triangle', notes: [659, 880, 1047] },
+    ATP:       { wave: 'sine',     notes: [784, 659, 784] },
+    OTHER:     { wave: 'triangle', notes: [523, 392] }
+  };
+  const profile = profiles[department];
+  const audio = _scanAudioContext;
+  if (!profile || !audio || audio.state !== 'running') return;
+  try {
+    const startAt = audio.currentTime + 0.02;
+    profile.notes.forEach((frequency, index) => {
+      const at = startAt + index * 0.12;
+      const oscillator = audio.createOscillator();
+      const gain = audio.createGain();
+      oscillator.type = profile.wave;
+      oscillator.frequency.setValueAtTime(frequency, at);
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(0.12, at + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.11);
+      oscillator.connect(gain);
+      gain.connect(audio.destination);
+      oscillator.start(at);
+      oscillator.stop(at + 0.12);
+    });
+  } catch(e) {}
+}
 
 // Load jsQR library dynamically
 function loadJsQR() {
@@ -2959,6 +2998,7 @@ function loadJsQR() {
 }
 
 async function openScanner() {
+  primeScanAudio();
   document.getElementById('scan-ov').classList.remove('hidden');
   document.getElementById('scan-hint').textContent = 'ກຳລັງເປີດກ້ອງ...';
   document.getElementById('scan-hint').className = 'scan-hint';
@@ -3058,6 +3098,7 @@ function closeScanner() {
 }
 
 function manualScanSubmit() {
+  primeScanAudio();
   const val = document.getElementById('scan-manual-input').value.trim();
   if (!val) return;
   handleScanResult(val);
@@ -3133,6 +3174,7 @@ async function saveScanStatusForItem(item, stage, staffName) {
       staffLog: [...existingLog, logEntry],
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    playDepartmentScanSuccessSound(_currentStaff?.department);
     toast(`✅ ອັບເດດ ${item.code} → "${stage}"${staffName?' ໂດຍ: '+staffName:''}`);
     return true;
   } catch(e) {
@@ -3152,6 +3194,7 @@ async function saveConfiguredScanStatus(item, stage) {
 
 async function saveScanStatus() {
   if (!_scanTarget || !_scanSelectedStage) return;
+  primeScanAudio();
   const btn = document.getElementById('scan-save-btn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ ກຳລັງບັນທຶກ...'; }
   const staffName = (document.getElementById('scan-staff-name')?.value || '').trim();
