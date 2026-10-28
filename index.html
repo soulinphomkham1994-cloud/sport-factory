@@ -2946,6 +2946,8 @@ let _scanTimer  = null;
 let _scanTarget = null; // item found by scan
 let _scanSelectedStage = null;
 let _scanAudioContext = null;
+const _scanSpeechBuffers = new Map();
+const _scanSpeechLoads = new Map();
 
 function primeScanAudio() {
   try {
@@ -2956,33 +2958,40 @@ function primeScanAudio() {
   } catch(e) {}
 }
 
-function playDepartmentScanSuccessSound(department) {
-  const profiles = {
-    SALE:      { wave: 'sine',     notes: [880, 1175] },
-    MARKETING: { wave: 'triangle', notes: [659, 880, 1047] },
-    ATP:       { wave: 'sine',     notes: [784, 659, 784] },
-    OTHER:     { wave: 'triangle', notes: [523, 392] }
-  };
-  const profile = profiles[department];
+function loadScanStatusSpeechBuffer(index) {
+  if (_scanSpeechBuffers.has(index)) return Promise.resolve(_scanSpeechBuffers.get(index));
+  if (_scanSpeechLoads.has(index)) return _scanSpeechLoads.get(index);
   const audio = _scanAudioContext;
-  if (!profile || !audio || audio.state !== 'running') return;
-  try {
-    const startAt = audio.currentTime + 0.02;
-    profile.notes.forEach((frequency, index) => {
-      const at = startAt + index * 0.12;
-      const oscillator = audio.createOscillator();
-      const gain = audio.createGain();
-      oscillator.type = profile.wave;
-      oscillator.frequency.setValueAtTime(frequency, at);
-      gain.gain.setValueAtTime(0.0001, at);
-      gain.gain.exponentialRampToValueAtTime(0.12, at + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.11);
-      oscillator.connect(gain);
-      gain.connect(audio.destination);
-      oscillator.start(at);
-      oscillator.stop(at + 0.12);
-    });
-  } catch(e) {}
+  if (!audio) return Promise.resolve(null);
+  const file = `audio/status-${String(index + 1).padStart(2, '0')}.wav`;
+  const load = fetch(new URL(file, document.baseURI), { cache: 'force-cache' })
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.arrayBuffer();
+    })
+    .then(data => audio.decodeAudioData(data))
+    .then(buffer => { _scanSpeechBuffers.set(index, buffer); return buffer; })
+    .catch(error => { console.warn('Status speech unavailable:', error.message); return null; })
+    .finally(() => _scanSpeechLoads.delete(index));
+  _scanSpeechLoads.set(index, load);
+  return load;
+}
+
+function playScanStatusSpeech(stage) {
+  const index = STAGES.indexOf(stage);
+  const audio = _scanAudioContext;
+  if (index < 0 || !audio) return;
+  loadScanStatusSpeechBuffer(index).then(buffer => {
+    if (!buffer) return;
+    const play = () => {
+      const source = audio.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audio.destination);
+      source.start();
+    };
+    if (audio.state === 'suspended') audio.resume().then(play).catch(() => {});
+    else if (audio.state === 'running') play();
+  });
 }
 
 // Load jsQR library dynamically
@@ -3158,23 +3167,32 @@ function closeScanResult() {
 async function saveScanStatusForItem(item, stage, staffName) {
   if (!item || !stage) return false;
   if (stage === item.stage) {
-    toast('⚠️ ສະຖານະຍັງເໝືອນເດີມ — ເລືອກສະຖານະໃໝ່');
-    return false;
+    const sheetSync = await syncSheetStatus(item.code, stage, true);
+    if (!sheetSync.ok) {
+      toast(`❌ ສົ່ງສະຖານະໄປ Google Sheet ບໍ່ສຳເລັດ: ${sheetSync.error || 'ລອງສະແກນອີກຄັ້ງ'}`);
+      return false;
+    }
+    playScanStatusSpeech(stage);
+    toast(`✅ ${item.code} ຢູ່ສະຖານະນີ້ແລ້ວ ແລະສົ່ງໄປ Google Sheet ແລ້ວ`);
+    return true;
   }
   try {
     const nowStr = new Date().toLocaleString('lo-LA',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     const logEntry = { stage, staff: staffName || 'ບໍ່ລະບຸ', time: nowStr, ts: Date.now() };
     const existingLog = Array.isArray(item.staffLog) ? item.staffLog : [];
 
-    // Start Sheet sync immediately; do not wait for Firestore first.
-    syncSheetStatus(item.code, stage);
     await db.collection(COLLECTION).doc(String(item.id)).update({
       stage,
       orderstatus: stage,
       staffLog: [...existingLog, logEntry],
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    playDepartmentScanSuccessSound(_currentStaff?.department);
+    const sheetSync = await syncSheetStatus(item.code, stage, true);
+    if (!sheetSync.ok) {
+      toast(`⚠️ Firestore ບັນທຶກແລ້ວ ແຕ່ສົ່ງໄປ Google Sheet ບໍ່ສຳເລັດ — ສະແກນລາຍການນີ້ຊ້ຳເພື່ອລອງອີກຄັ້ງ: ${sheetSync.error || ''}`);
+      return true;
+    }
+    playScanStatusSpeech(stage);
     toast(`✅ ອັບເດດ ${item.code} → "${stage}"${staffName?' ໂດຍ: '+staffName:''}`);
     return true;
   } catch(e) {
@@ -3185,10 +3203,6 @@ async function saveScanStatusForItem(item, stage, staffName) {
 
 async function saveConfiguredScanStatus(item, stage) {
   const staffName = _currentStaff?.name || '';
-  if (stage === item.stage) {
-    toast(`ℹ️ ${item.code} ຢູ່ສະຖານະນີ້ຢູ່ແລ້ວ: ${stage}`);
-    return;
-  }
   await saveScanStatusForItem(item, stage, staffName);
 }
 
@@ -3228,19 +3242,62 @@ const STAGE_STATUS_MAP = {
   '1.1.10. ຈັດສົ່ງສໍາເລັດແລ້ວ':   'ຈັດສົ່ງສຳເລັດແລ້ວ'
 };
 
-function syncSheetStatus(invCode, stage) {
-  if (!APPS_SCRIPT_URL || !invCode) return Promise.resolve();
+async function syncSheetStatus(invCode, stage, verifySheet = false) {
+  if (!APPS_SCRIPT_URL || !invCode) return { ok: false, error: 'ບໍ່ມີ URL ຫຼືເລກ Order' };
   const status = STAGE_STATUS_MAP[stage] || stage;
+  const invoice = String(invCode).trim();
+  const payload = JSON.stringify({ inv: invoice, status });
   // text/plain is a CORS-safelisted content type, so Apps Script receives it
   // without the slow OPTIONS preflight that application/json causes.
-  return fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: {'Content-Type':'text/plain;charset=UTF-8'},
-    body: JSON.stringify({inv: invCode, status: status}),
-    mode: 'no-cors',
-    cache: 'no-store',
-    keepalive: true
-  }).catch(e => console.warn('Sheet sync skipped:', e.message));
+  let sent = false;
+  let sendError = '';
+  for (let attempt = 0; attempt < (verifySheet ? 2 : 1) && !sent; attempt++) {
+    try {
+      const response = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: {'Content-Type':'text/plain;charset=UTF-8'},
+        body: payload,
+        mode: 'no-cors',
+        cache: 'no-store',
+        keepalive: true
+      });
+      if (response.type !== 'opaque') {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const body = await response.text();
+        let result = null;
+        try { result = JSON.parse(body); } catch(e) {}
+        if (result && result.ok === false) throw new Error(result.error || 'Apps Script ປະຕິເສດຄຳຂໍ');
+      }
+      sent = true;
+    } catch(e) {
+      sendError = e.message;
+      if (attempt === 1) break;
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+  if (!sent) {
+    console.warn('Sheet sync failed:', sendError);
+    return { ok: false, error: sendError || 'ສົ່ງຄຳຂໍບໍ່ສຳເລັດ' };
+  }
+  if (!verifySheet) return { ok: true, verified: false };
+
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      const response = await fetch(SHEET_CSV_URL + '&t=' + Date.now(), {
+        method: 'GET', cache: 'no-store', signal: AbortSignal.timeout(15000)
+      });
+      if (!response.ok) throw new Error(`CSV HTTP ${response.status}`);
+      const rows = parseCSV(await response.text());
+      const row = rows.slice(1).find(r => String(r[COL.code] || '').trim() === invoice);
+      if (row && String(row[5] || '').trim() === status) return { ok: true, verified: true };
+    } catch(e) {
+      sendError = e.message;
+    }
+    if (attempt < 5) await new Promise(resolve => setTimeout(resolve, 700));
+  }
+  const error = sendError || `Google Sheet ຍັງບໍ່ສະແດງສະຖານະ "${status}" ສຳລັບ ${invoice}`;
+  console.warn('Sheet status not verified:', error);
+  return { ok: false, error };
 }
 // ==================== END GOOGLE SHEET SYNC ====================
 
