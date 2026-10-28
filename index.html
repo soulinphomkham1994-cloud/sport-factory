@@ -3181,13 +3181,21 @@ async function saveScanStatusForItem(item, stage, staffName) {
     const logEntry = { stage, staff: staffName || 'ບໍ່ລະບຸ', time: nowStr, ts: Date.now() };
     const existingLog = Array.isArray(item.staffLog) ? item.staffLog : [];
 
-    await db.collection(COLLECTION).doc(String(item.id)).update({
-      stage,
-      orderstatus: stage,
-      staffLog: [...existingLog, logEntry],
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    const sheetSync = await syncSheetStatus(item.code, stage, true);
+    // Start Sheet (column F) sync immediately, same as adv(); do not wait for Firestore first.
+    // Otherwise a slow/offline/failed Firestore update blocks the Sheet write completely.
+    const sheetSyncPromise = syncSheetStatus(item.code, stage, true);
+    try {
+      await db.collection(COLLECTION).doc(String(item.id)).update({
+        stage,
+        orderstatus: stage,
+        staffLog: [...existingLog, logEntry],
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch (fsErr) {
+      await sheetSyncPromise.catch(() => {});
+      throw fsErr;
+    }
+    const sheetSync = await sheetSyncPromise;
     if (!sheetSync.ok) {
       toast(`⚠️ Firestore ບັນທຶກແລ້ວ ແຕ່ສົ່ງໄປ Google Sheet ບໍ່ສຳເລັດ — ສະແກນລາຍການນີ້ຊ້ຳເພື່ອລອງອີກຄັ້ງ: ${sheetSync.error || ''}`);
       return true;
