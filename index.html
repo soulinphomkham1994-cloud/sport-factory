@@ -3028,7 +3028,9 @@ function handleScanResult(qrData) {
     setHint('✅ ພົບ Order: ' + found.code, 'found');
     setTimeout(() => {
       closeScanner();
-      openScanResult(found);
+      const scanStage = _currentStaff?.department && STAGES.includes(_currentStaff.scanStage) ? _currentStaff.scanStage : '';
+      if (scanStage) saveConfiguredScanStatus(found, scanStage);
+      else openScanResult(found);
     }, 600);
   } else {
     setHint('❌ ບໍ່ພົບ Order "' + code + '"', 'error');
@@ -3112,36 +3114,50 @@ function closeScanResult() {
   _scanSelectedStage = null;
 }
 
-async function saveScanStatus() {
-  if (!_scanTarget || !_scanSelectedStage) return;
-  if (_scanSelectedStage === _scanTarget.stage) {
+async function saveScanStatusForItem(item, stage, staffName) {
+  if (!item || !stage) return false;
+  if (stage === item.stage) {
     toast('⚠️ ສະຖານະຍັງເໝືອນເດີມ — ເລືອກສະຖານະໃໝ່');
-    return;
+    return false;
   }
-  const staffName = (document.getElementById('scan-staff-name')?.value || '').trim();
-  const btn = document.getElementById('scan-save-btn');
-  btn.disabled = true;
-  btn.textContent = '⏳ ກຳລັງບັນທຶກ...';
   try {
     const nowStr = new Date().toLocaleString('lo-LA',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-    const logEntry = { stage: _scanSelectedStage, staff: staffName || 'ບໍ່ລະບຸ', time: nowStr, ts: Date.now() };
-    const existingLog = Array.isArray(_scanTarget.staffLog) ? _scanTarget.staffLog : [];
+    const logEntry = { stage, staff: staffName || 'ບໍ່ລະບຸ', time: nowStr, ts: Date.now() };
+    const existingLog = Array.isArray(item.staffLog) ? item.staffLog : [];
 
     // Start Sheet sync immediately; do not wait for Firestore first.
-    syncSheetStatus(_scanTarget.code, _scanSelectedStage);
-    await db.collection(COLLECTION).doc(String(_scanTarget.id)).update({
-      stage: _scanSelectedStage,
-      orderstatus: _scanSelectedStage,
+    syncSheetStatus(item.code, stage);
+    await db.collection(COLLECTION).doc(String(item.id)).update({
+      stage,
+      orderstatus: stage,
       staffLog: [...existingLog, logEntry],
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    toast(`✅ ອັບເດດ ${_scanTarget.code} → "${_scanSelectedStage}"${staffName?' ໂດຍ: '+staffName:''}`);
-    closeScanResult();
+    toast(`✅ ອັບເດດ ${item.code} → "${stage}"${staffName?' ໂດຍ: '+staffName:''}`);
+    return true;
   } catch(e) {
     toast('❌ ບັນທຶກບໍ່ໄດ້: ' + e.message);
+    return false;
   }
-  btn.disabled = false;
-  btn.textContent = '💾 ອັບເດດສະຖານະ';
+}
+
+async function saveConfiguredScanStatus(item, stage) {
+  const staffName = _currentStaff?.name || '';
+  if (stage === item.stage) {
+    toast(`ℹ️ ${item.code} ຢູ່ສະຖານະນີ້ຢູ່ແລ້ວ: ${stage}`);
+    return;
+  }
+  await saveScanStatusForItem(item, stage, staffName);
+}
+
+async function saveScanStatus() {
+  if (!_scanTarget || !_scanSelectedStage) return;
+  const btn = document.getElementById('scan-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ ກຳລັງບັນທຶກ...'; }
+  const staffName = (document.getElementById('scan-staff-name')?.value || '').trim();
+  const saved = await saveScanStatusForItem(_scanTarget, _scanSelectedStage, staffName);
+  if (saved) closeScanResult();
+  if (btn) { btn.disabled = false; btn.textContent = '💾 ອັບເດດສະຖານະ'; }
 }
 
 // ==================== GOOGLE SHEET SYNC (Feature 2) ====================
@@ -3235,6 +3251,7 @@ function toggleMobilePreview() {
 // Staff registry stored in Firestore collection: 'staff_access'
 // Each doc: { name, pin (hashed), role, active, createdAt, grantedBy }
 const STAFF_COLLECTION = 'staff_access';
+const STAFF_DEPARTMENTS = ['SALE', 'MARKETING', 'ATP', 'OTHER'];
 const ADMIN_PIN = '1234'; // Change this — admin PIN to manage staff
 
 let _currentStaff = null; // logged-in staff info
@@ -3380,8 +3397,10 @@ async function loadStaffList() {
             · ${d.grantedBy ? 'ຮັບສິດໂດຍ: '+d.grantedBy : ''}
             · ${d.createdAt ? new Date(d.createdAt.toDate()).toLocaleDateString('lo-LA') : ''}
           </div>
+          <div class="staff-meta">ແຜນກ: ${d.department || '—'} · ສະຖານະສະແກນ: ${d.scanStage || 'ບໍ່ຕັ້ງຄ່າ'}</div>
         </div>
         <div class="staff-actions">
+          <button class="btn" onclick="editStaffScanConfig('${doc.id}')" style="height:32px;font-size:12px;padding:0 10px">⚙️ ຕັ້ງຄ່າສະແກນ</button>
           <button class="btn" onclick="toggleStaffAccess('${doc.id}',${active})" style="height:32px;font-size:12px;padding:0 10px">${active ? '⛔ ປິດ' : '✅ ເປີດ'}</button>
           <button class="btn ab-del" onclick="deleteStaff('${doc.id}','${d.name}')" style="height:32px;font-size:12px;padding:0 10px;color:var(--red-lite);border-color:rgba(229,57,53,.3)">🗑️</button>
         </div>
@@ -3389,6 +3408,65 @@ async function loadStaffList() {
     }).join('');
   } catch(e) {
     panel.innerHTML = `<div class="ac-err">❌ ${e.message}</div>`;
+  }
+}
+
+let _staffScanConfigDocId = null;
+
+async function editStaffScanConfig(docId) {
+  try {
+    const staffDoc = await db.collection(STAFF_COLLECTION).doc(docId).get();
+    if (!staffDoc.exists) throw new Error('ບໍ່ພົບຂໍ້ມູນພະນັກງານ');
+    const staff = staffDoc.data() || {};
+    _staffScanConfigDocId = docId;
+    const ov = document.createElement('div');
+    ov.className = 'ac-ov';
+    ov.id = 'ac-scan-config-ov';
+    ov.innerHTML = `
+      <div class="ac-box">
+        <div class="ac-title">⚙️ ກຳນົດຄ່າສະແກນປະຈຳ</div>
+        <div class="ac-sub">ເມື່ອພະນັກງານຄົນນີ້ສະແກນ QR ລະບົບຈະອັບເດດເປັນສະຖານະທີ່ກຳນົດໄວ້ທັນທີ</div>
+        <div class="ac-field">
+          <label class="ac-label">ແຜນກ / ພະແນກ</label>
+          <select class="fi" id="staff-scan-department">
+            <option value="">-- ເລືອກແຜນກ --</option>
+            ${STAFF_DEPARTMENTS.map(dept => `<option value="${dept}" ${staff.department === dept ? 'selected' : ''}>${dept}</option>`).join('')}
+          </select>
+        </div>
+        <div class="ac-field">
+          <label class="ac-label">ສະຖານະປະຈຳເຄື່ອງສະແກນ</label>
+          <select class="fi" id="staff-scan-stage">
+            <option value="">-- ບໍ່ຕັ້ງຄ່າ (ເລືອກສະຖານະເອງ) --</option>
+            ${STAGES.map(stage => `<option value="${stage}" ${staff.scanStage === stage ? 'selected' : ''}>${stage}</option>`).join('')}
+          </select>
+        </div>
+        <div class="ac-err" id="staff-scan-config-err"></div>
+        <div class="ac-btns">
+          <button class="btn" onclick="document.getElementById('ac-scan-config-ov').remove()">ຍົກເລີກ</button>
+          <button class="btn bp" onclick="saveStaffScanConfig()">💾 ບັນທຶກຄ່າ</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+  } catch(e) {
+    toast('❌ ໂຫລດຄ່າສະແກນບໍ່ໄດ້: ' + e.message);
+  }
+}
+
+async function saveStaffScanConfig() {
+  const department = document.getElementById('staff-scan-department')?.value || '';
+  const scanStage = document.getElementById('staff-scan-stage')?.value || '';
+  const err = document.getElementById('staff-scan-config-err');
+  if (scanStage && !department) {
+    if (err) err.textContent = '⚠️ ກະລຸນາເລືອກແຜນກກ່ອນກຳນົດສະຖານະ';
+    return;
+  }
+  try {
+    await db.collection(STAFF_COLLECTION).doc(_staffScanConfigDocId).update({ department, scanStage });
+    document.getElementById('ac-scan-config-ov')?.remove();
+    toast('✅ ບັນທຶກຄ່າສະແກນປະຈຳແລ້ວ');
+    await loadStaffList();
+  } catch(e) {
+    if (err) err.textContent = '❌ ' + e.message;
   }
 }
 
@@ -3499,7 +3577,7 @@ async function doStaffLogin() {
 const SESSION_KEY = 'sl_staff_session';
 
 function saveSession(staff) {
-  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ name: staff.name, role: staff.role, id: staff.id })); } catch(e){}
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ name: staff.name, role: staff.role, id: staff.id, department: staff.department || '', scanStage: staff.scanStage || '' })); } catch(e){}
 }
 function loadSession() {
   try { const s = sessionStorage.getItem(SESSION_KEY); return s ? JSON.parse(s) : null; } catch(e){ return null; }
@@ -3629,7 +3707,7 @@ async function doGateLogin() {
       var dname = (d.name || '').trim().toLowerCase();
       var dpin  = normalizePin(d.pin || d.pinHash || '');
       if (dname === nameLow && dpin === pinNorm && d.active !== false) {
-        match = { id: doc.id, name: d.name, role: d.role || 'staff', active: true };
+        match = { id: doc.id, name: d.name, role: d.role || 'staff', active: true, department: d.department || '', scanStage: d.scanStage || '' };
       }
     });
 
@@ -3710,6 +3788,9 @@ function confirmAdminBypass() {
         if (!doc.exists || doc.data().active === false) {
           toast('⛔ ບັນຊີຂອງທ່ານຖືກປິດ — ກະລຸນາຕິດຕໍ່ Admin');
           setTimeout(() => { clearSession(); location.reload(); }, 2500);
+        } else {
+          _currentStaff = { ...session, ...doc.data(), id: session.id };
+          saveSession(_currentStaff);
         }
       }).catch(()=>{});
     }
