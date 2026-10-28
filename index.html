@@ -248,15 +248,16 @@ tbody td{padding:14px 16px;vertical-align:middle}
 
 /* TOAST */
 .toast{
-  position:fixed;bottom:2rem;right:2rem;
-  background:var(--bg3);color:var(--text);
-  border:1px solid var(--accent);
-  padding:12px 24px;border-radius:var(--r);
-  font-size:14px;font-weight: 600; z-index:999;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-  opacity:0;transform:translateY(10px);transition:all .3s cubic-bezier(0.18, 0.89, 0.32, 1.28);pointer-events:none;
+  position:fixed;top:50%;left:50%;right:auto;bottom:auto;
+  width:min(560px,calc(100vw - 32px));
+  background:var(--bg3);color:#fff;
+  border:2px solid var(--accent);
+  padding:20px 28px;border-radius:var(--rl);
+  font-size:17px;font-weight:800;line-height:1.6;text-align:center;z-index:9999;
+  box-shadow:0 16px 48px rgba(0,0,0,0.65);
+  opacity:0;transform:translate(-50%,-50%) scale(.96);transition:all .22s ease;pointer-events:none;
 }
-.toast.show{opacity:1;transform:translateY(0)}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 
 .ot{font-size:11px;color:var(--red-lite);font-weight:700;margin-top:6px;letter-spacing:.03em; display: flex; align-items: center; gap: 4px;}
 .fn-info{margin-top:16px;font-size:12px;color:var(--text3);text-align:right;font-family:var(--mono); font-weight: 500;}
@@ -2948,6 +2949,7 @@ let _scanSelectedStage = null;
 let _scanAudioContext = null;
 const _scanSpeechBuffers = new Map();
 const _scanSpeechLoads = new Map();
+const _scanFallbackPlayers = new Map();
 
 function primeScanAudio() {
   try {
@@ -2980,18 +2982,35 @@ function loadScanStatusSpeechBuffer(index) {
 function playScanStatusSpeech(stage) {
   const index = STAGES.indexOf(stage);
   const audio = _scanAudioContext;
-  if (index < 0 || !audio) return;
+  if (index < 0) return;
+  const playFallback = () => {
+    try {
+      let player = _scanFallbackPlayers.get(index);
+      if (!player) {
+        player = new Audio(new URL(`audio/status-${String(index + 1).padStart(2, '0')}.wav`, document.baseURI).href);
+        player.preload = 'auto';
+        _scanFallbackPlayers.set(index, player);
+      }
+      player.currentTime = 0;
+      const result = player.play();
+      if (result && result.catch) result.catch(error => console.warn('Status speech playback blocked:', error.message));
+    } catch(e) { console.warn('Status speech playback unavailable:', e.message); }
+  };
+  if (!audio) { playFallback(); return; }
   loadScanStatusSpeechBuffer(index).then(buffer => {
-    if (!buffer) return;
+    if (!buffer) { playFallback(); return; }
     const play = () => {
-      const source = audio.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audio.destination);
-      source.start();
+      try {
+        const source = audio.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audio.destination);
+        source.start();
+      } catch(e) { playFallback(); }
     };
-    if (audio.state === 'suspended') audio.resume().then(play).catch(() => {});
+    if (audio.state === 'suspended') audio.resume().then(play).catch(playFallback);
     else if (audio.state === 'running') play();
-  });
+    else playFallback();
+  }).catch(playFallback);
 }
 
 // Load jsQR library dynamically
@@ -3008,6 +3027,7 @@ function loadJsQR() {
 
 async function openScanner() {
   primeScanAudio();
+  STAGES.forEach((_, i) => loadScanStatusSpeechBuffer(i)); // preload spoken status so it plays instantly
   document.getElementById('scan-ov').classList.remove('hidden');
   document.getElementById('scan-hint').textContent = 'ກຳລັງເປີດກ້ອງ...';
   document.getElementById('scan-hint').className = 'scan-hint';
@@ -3170,53 +3190,115 @@ function closeScanResult() {
   _scanSelectedStage = null;
 }
 
+// ---- Fast scan save: instant feedback + Sheet column F confirmed against the real Sheet ----
+const _scanSheetSeq = {}; // latest save sequence per INV (a newer scan supersedes older retries)
+const _scanSheetQueue = new Map();
+const _scanSleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Same request as manual save (no-cors, text/plain). A rejected fetch does NOT mean the
+// Sheet was not written (Apps Script redirect), so the result is only used as a hint.
+function scanSheetPush(inv, status) {
+  return fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'text/plain;charset=UTF-8'},
+    body: JSON.stringify({ inv, status }),
+    mode: 'no-cors',
+    cache: 'no-store',
+    keepalive: true
+  }).then(() => true, () => false);
+}
+
+function queueScanSheetPush(inv, status, seq) {
+  const previous = _scanSheetQueue.get(inv) || Promise.resolve();
+  const current = previous.catch(() => false).then(async () => {
+    if (_scanSheetSeq[inv] !== seq) return 'superseded';
+    return (await scanSheetPush(inv, status)) ? 'sent' : 'send-failed';
+  });
+  _scanSheetQueue.set(inv, current);
+  const cleanup = () => {
+    if (_scanSheetQueue.get(inv) === current) _scanSheetQueue.delete(inv);
+  };
+  current.then(cleanup, cleanup);
+  return current;
+}
+
+// Confirm in the background with a short, bounded readback; a stale public CSV
+// is not proof that the Apps Script write failed.
+async function scanSheetConfirm(inv, status, seq, firstPush) {
+  let sent = false;
+  try { sent = await firstPush === 'sent'; } catch(e) {}
+  const delays = [500, 900, 1500, 2300];
+  for (let i = 0; i < delays.length; i++) {
+    if (_scanSheetSeq[inv] !== seq) return 'superseded';
+    if (!sent && i === 0) sent = await queueScanSheetPush(inv, status, seq) === 'sent';
+    await _scanSleep(delays[i]);
+    try {
+      const response = await fetch(SHEET_CSV_URL + '&t=' + Date.now(), {
+        method: 'GET', cache: 'no-store', signal: AbortSignal.timeout(5000)
+      });
+      if (response.ok) {
+        const rows = parseCSV(await response.text());
+        const row = rows.slice(1).find(r => String(r[COL.code] || '').trim() === inv);
+        if (row && String(row[5] || '').trim() === status) return 'ok';
+      }
+    } catch(e) {}
+    if (i === 1 && _scanSheetSeq[inv] === seq) {
+      sent = await queueScanSheetPush(inv, status, seq) === 'sent';
+    }
+  }
+  return _scanSheetSeq[inv] === seq ? (sent ? 'pending' : 'send-failed') : 'superseded';
+}
+
+function scanLongToast(msg) {
+  toast(msg);
+  clearTimeout(tt);
+  tt = setTimeout(() => document.getElementById('toast').classList.remove('show'), 8000);
+}
+
 async function saveScanStatusForItem(item, stage, staffName) {
   if (!item || !stage) return false;
-  toast('⏳ ກຳລັງບັນທຶກ...');
-  if (stage === item.stage) {
-    // Same send as manual save (no slow CSV verification that blocks feedback)
-    const sheetSync = await syncSheetStatus(item.code, stage);
-    if (!sheetSync.ok) {
-      toast(`❌ ສົ່ງສະຖານະໄປ Google Sheet ບໍ່ສຳເລັດ: ${sheetSync.error || 'ລອງສະແກນອີກຄັ້ງ'}`);
-      return false;
-    }
-    playScanStatusSpeech(stage);
-    toast(`✅ ${item.code} ຢູ່ສະຖານະນີ້ແລ້ວ ແລະສົ່ງໄປ Google Sheet ແລ້ວ`);
-    return true;
-  }
-  try {
+  primeScanAudio();
+  const inv = String(item.code || '').trim();
+  if (!inv) { toast('❌ ບໍ່ມີເລກ Order'); return false; }
+  const status = STAGE_STATUS_MAP[stage] || stage;
+  const seq = (_scanSheetSeq[inv] || 0) + 1;
+  _scanSheetSeq[inv] = seq;
+
+  // Start voice and both writes immediately; Sheet verification never blocks the UI.
+  playScanStatusSpeech(stage);
+  toast(`⏳ ${inv} · ກຳລັງບັນທຶກສະຖານະ...`);
+  const sheetPush = queueScanSheetPush(inv, status, seq);
+
+  let fsP = null;
+  if (stage !== item.stage) {
     const nowStr = new Date().toLocaleString('lo-LA',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     const logEntry = { stage, staff: staffName || 'ບໍ່ລະບຸ', time: nowStr, ts: Date.now() };
     const existingLog = Array.isArray(item.staffLog) ? item.staffLog : [];
-
-    // Send to Google Sheet column F immediately (same call as manual save / adv()),
-    // in parallel with Firestore, so a slow Firestore never blocks the Sheet.
-    const sheetP = syncSheetStatus(item.code, stage);
-    const fsP = db.collection(COLLECTION).doc(String(item.id)).update({
-      stage,
-      orderstatus: stage,
-      staffLog: [...existingLog, logEntry],
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    fsP.catch(e => toast('❌ ບັນທຶກບໍ່ໄດ້: ' + e.message));
-    const sheetSync = await sheetP;
-    // Do not wait forever for Firestore (offline/slow network): give feedback after 4s.
-    const fsState = await Promise.race([
-      fsP.then(() => 'ok', () => 'err'),
-      new Promise(r => setTimeout(() => r('slow'), 4000))
-    ]);
-    if (fsState === 'err') return false; // error toast already shown above
-    if (!sheetSync.ok) {
-      toast(`⚠️ ບັນທຶກແລ້ວ ແຕ່ສົ່ງໄປ Google Sheet ບໍ່ສຳເລັດ — ສະແກນລາຍການນີ້ຊ້ຳເພື່ອລອງອີກຄັ້ງ: ${sheetSync.error || ''}`);
-      return true;
+    try {
+      fsP = db.collection(COLLECTION).doc(String(item.id)).update({
+        stage,
+        orderstatus: stage,
+        staffLog: [...existingLog, logEntry],
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch(e) {
+      scanLongToast('❌ ບັນທຶກບໍ່ໄດ້: ' + e.message);
+      return false;
     }
-    playScanStatusSpeech(stage);
-    toast(`✅ ອັບເດດ ${item.code} → "${stage}"${staffName?' ໂດຍ: '+staffName:''}${fsState==='slow'?' (ກຳລັງຊິງຄ໌)':''}`);
-    return true;
-  } catch(e) {
-    toast('❌ ບັນທຶກບໍ່ໄດ້: ' + e.message);
-    return false;
   }
+
+  // Wait for Firestore acknowledgement so a failed write is never reported as success.
+  if (fsP) {
+    try { await fsP; }
+    catch(e) { scanLongToast('❌ ບັນທຶກບໍ່ໄດ້: ' + e.message); return false; }
+  }
+  toast(`✅ ${inv} → "${stage}"${staffName ? ' ໂດຍ: ' + staffName : ''} · ບັນທຶກໃນລະບົບແລ້ວ · ກຳລັງຊິງ Google Sheet`);
+  // Background confirmation updates the message only when the Sheet is actually readable.
+  scanSheetConfirm(inv, status, seq, sheetPush).then(result => {
+    if (result === 'ok') toast(`✅ ${inv} → "${status}" · Google Sheet ອັບເດດແລ້ວ`);
+    else if (result === 'send-failed') scanLongToast(`⚠️ ${inv}: ສົ່ງຄຳຂໍໄປ Google Sheet ບໍ່ສຳເລັດ — ກວດສອບອິນເຕີເນັດ`);
+  });
+  return true;
 }
 
 async function saveConfiguredScanStatus(item, stage) {
