@@ -3172,8 +3172,10 @@ function closeScanResult() {
 
 async function saveScanStatusForItem(item, stage, staffName) {
   if (!item || !stage) return false;
+  toast('⏳ ກຳລັງບັນທຶກ...');
   if (stage === item.stage) {
-    const sheetSync = await syncSheetStatus(item.code, stage, true);
+    // Same send as manual save (no slow CSV verification that blocks feedback)
+    const sheetSync = await syncSheetStatus(item.code, stage);
     if (!sheetSync.ok) {
       toast(`❌ ສົ່ງສະຖານະໄປ Google Sheet ບໍ່ສຳເລັດ: ${sheetSync.error || 'ລອງສະແກນອີກຄັ້ງ'}`);
       return false;
@@ -3187,27 +3189,29 @@ async function saveScanStatusForItem(item, stage, staffName) {
     const logEntry = { stage, staff: staffName || 'ບໍ່ລະບຸ', time: nowStr, ts: Date.now() };
     const existingLog = Array.isArray(item.staffLog) ? item.staffLog : [];
 
-    // Start Sheet (column F) sync immediately, same as adv(); do not wait for Firestore first.
-    // Otherwise a slow/offline/failed Firestore update blocks the Sheet write completely.
-    const sheetSyncPromise = syncSheetStatus(item.code, stage, true);
-    try {
-      await db.collection(COLLECTION).doc(String(item.id)).update({
-        stage,
-        orderstatus: stage,
-        staffLog: [...existingLog, logEntry],
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    } catch (fsErr) {
-      await sheetSyncPromise.catch(() => {});
-      throw fsErr;
-    }
-    const sheetSync = await sheetSyncPromise;
+    // Send to Google Sheet column F immediately (same call as manual save / adv()),
+    // in parallel with Firestore, so a slow Firestore never blocks the Sheet.
+    const sheetP = syncSheetStatus(item.code, stage);
+    const fsP = db.collection(COLLECTION).doc(String(item.id)).update({
+      stage,
+      orderstatus: stage,
+      staffLog: [...existingLog, logEntry],
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    fsP.catch(e => toast('❌ ບັນທຶກບໍ່ໄດ້: ' + e.message));
+    const sheetSync = await sheetP;
+    // Do not wait forever for Firestore (offline/slow network): give feedback after 4s.
+    const fsState = await Promise.race([
+      fsP.then(() => 'ok', () => 'err'),
+      new Promise(r => setTimeout(() => r('slow'), 4000))
+    ]);
+    if (fsState === 'err') return false; // error toast already shown above
     if (!sheetSync.ok) {
-      toast(`⚠️ Firestore ບັນທຶກແລ້ວ ແຕ່ສົ່ງໄປ Google Sheet ບໍ່ສຳເລັດ — ສະແກນລາຍການນີ້ຊ້ຳເພື່ອລອງອີກຄັ້ງ: ${sheetSync.error || ''}`);
+      toast(`⚠️ ບັນທຶກແລ້ວ ແຕ່ສົ່ງໄປ Google Sheet ບໍ່ສຳເລັດ — ສະແກນລາຍການນີ້ຊ້ຳເພື່ອລອງອີກຄັ້ງ: ${sheetSync.error || ''}`);
       return true;
     }
     playScanStatusSpeech(stage);
-    toast(`✅ ອັບເດດ ${item.code} → "${stage}"${staffName?' ໂດຍ: '+staffName:''}`);
+    toast(`✅ ອັບເດດ ${item.code} → "${stage}"${staffName?' ໂດຍ: '+staffName:''}${fsState==='slow'?' (ກຳລັງຊິງຄ໌)':''}`);
     return true;
   } catch(e) {
     toast('❌ ບັນທຶກບໍ່ໄດ້: ' + e.message);
